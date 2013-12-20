@@ -121,6 +121,13 @@ class CryoConTempController(PyTango.Device_4Impl, CryoCon.CryoCon):
         #get device properties
         self.get_device_properties(self.get_device_class())
 
+        #retrieve allowed transient property if present and reset transient_errors
+        self.transient_errors = 0
+        if (self.AllowedTransientErrors == []) or (type(self.AllowedTransientErrors) != int):
+            msg = 'In %s::init_device() AllowedTransientErrors not specified or invalid, assuming 0' % self.get_name()
+            self.warn_stream(msg)
+            self.AllowedTransientErrors = 0
+
         #lock for avoiding simultaneous serial port access
         self.lock = threading.Lock()
 
@@ -247,9 +254,32 @@ class CryoConTempController(PyTango.Device_4Impl, CryoCon.CryoCon):
         self.info_stream('In %s::dev_state()' % self.get_name())
 
         try:
+            #if state is FAULT, don't waste your time
+            current_state = self.get_state()
+            if current_state == PyTango.DevState.FAULT:
+                return current_state
+
             #query control on/off and front panel lockout
             cmd = self.CMD_CONTROL_QUERY + self.CMD_SEPARATOR + self.CMD_SYS_LOCKOUT_QUERY
             result = self._communicate_raw(cmd, output_expected=True, strip_string=True)
+
+            #check if communication was correct and reset transient_errors if so
+            if result.find('NACK') >= 0:
+                self.transient_errors += 1
+                error_now = True
+            else:
+                self.transient_errors = 0
+                error_now = False
+            if self.transient_errors > self.AllowedTransientErrors:
+                msg = 'Max transient errors exceeded. It looks like a real comm problem. Please check!'
+                self.error_stream(msg)
+                self._set_state(PyTango.DevState.FAULT, msg)
+                return self.get_state()
+            #if this was simply a transient error, return current state
+            if error_now:
+                return self.get_state()
+
+            #now it should be safe to try to parse result
             control, lockout = [res.strip() for res in result.split(self.RESULT_SEPARATOR)]
 
             #check control on/off has not been modified
@@ -292,6 +322,14 @@ class CryoConTempController(PyTango.Device_4Impl, CryoCon.CryoCon):
 #------------------------------------------------------------------
     def read_attr_hardware(self,data):
         self.info_stream('In %s::read_attr_hardware()' % self.get_name())
+
+
+#------------------------------------------------------------------
+#    Read TransientErrors attribute
+#------------------------------------------------------------------
+    def read_TransientErrors(self, attr):
+        self.info_stream('In %s::read_TransientErrors()' % self.get_name())
+        attr.set_value(self.transient_errors)
 
 
 #------------------------------------------------------------------
@@ -709,6 +747,11 @@ class CryoConTempControllerClass(PyTango.DeviceClass):
 
     #    Device Properties
     device_property_list = {
+        'AllowedTransientErrors':
+            [PyTango.DevUShort,
+            'Some models (at least the M24C used at alba BL29) randomly answer NACK to valid command requests. The manufacturer was contacted '
+            'but I got no answer so far. The only solution to avoid continuously going to FAULT is simply ignore these transient errors.',
+            [] ],
         'SerialDevice':
             [PyTango.DevString,
             'The serial device to connect to the instrument.',
@@ -877,6 +920,12 @@ class CryoConTempControllerClass(PyTango.DeviceClass):
             [[PyTango.DevString,
             PyTango.SCALAR,
             PyTango.READ_WRITE]],
+        'TransientErrors':
+            [[PyTango.DevLong,
+            PyTango.SCALAR,
+            PyTango.READ],
+            {
+            }],
     }
 
 
