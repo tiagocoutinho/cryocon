@@ -133,8 +133,11 @@ class CryoConTempController(PyTango.Device_4Impl, CryoCon.CryoCon):
 
         #try to initialize communications (set FAULT state and return if goes wrong)
         try:
-            self.serial = PyTango.DeviceProxy(self.SerialDevice)
-            self._init_comms()
+            if self.CommType == 'serial':
+                self.serial = PyTango.DeviceProxy(self.SerialDevice)
+                self._init_comms()
+            elif self.CommType == 'eth':
+                self._init_eth_comms(self.IP, self.Eth_Port)
         except Exception, e:
             msg = 'In %s::init_device() error while initializing communication: %s' % (self.get_name(), repr(e))
             self.error_stream(msg)
@@ -167,7 +170,6 @@ class CryoConTempController(PyTango.Device_4Impl, CryoCon.CryoCon):
             self.channels = {}
             for channel in self.channels_keys:
                 self.channels[channel] = CryoCon.Channel()
-
             #update channels info
             self._update_channels_info()
 
@@ -186,7 +188,6 @@ class CryoConTempController(PyTango.Device_4Impl, CryoCon.CryoCon):
             self.read_loops_rates_cmd = self.CMD_SEPARATOR.join([self.CMD_LOOP_RATE_QUERY % i for i in self.loops_keys])
             self.read_loops_setpoints_read_cmd = self.CMD_SEPARATOR.join([self.CMD_LOOP_SETPT_QUERY % i for i in self.loops_keys])
             self.read_loops_types_read_cmd = self.CMD_SEPARATOR.join([self.CMD_LOOP_TYPE_QUERY % i for i in self.loops_keys])
-
             #let's try to avoid unnecessary accesses to the hardware
             if self.ReadValidityPeriod == []:
                 self.ch_read_validity = 1 #1 second default timeout
@@ -751,6 +752,18 @@ class CryoConTempControllerClass(PyTango.DeviceClass):
             [PyTango.DevUShort,
             'Some models (at least the M24C used at alba BL29) randomly answer NACK to valid command requests. The manufacturer was contacted '
             'but I got no answer so far. The only solution to avoid continuously going to FAULT is simply ignore these transient errors.',
+            [] ],
+        'CommType':
+            [PyTango.DevString,
+            'eth or serial.',
+            [] ],
+        'IP':
+            [PyTango.DevString,
+            'IP of the instrument.',
+            [] ],
+        'Eth_Port':
+            [PyTango.DevString,
+            'Ethernet port of the instrument.',
             [] ],
         'SerialDevice':
             [PyTango.DevString,
