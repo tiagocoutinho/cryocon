@@ -228,7 +228,13 @@ class CryoCon(object):
         self.crycon_socket.connect(self.socket_conf)
         self.buff = self.MAX_BUFF_SIZE
         self._communicate_raw = self._communicate_raw_Eth
-        
+
+    def _close_eth_comms(self):
+        try:
+            self.crycon_socket.close()
+        except:
+            pass
+
     def _communicate_raw_Eth(self, cmd, output_expected=False, 
                              strip_string=True):
         with self.lock:
