@@ -51,6 +51,8 @@ import PyTango
 import time
 import math
 import traceback
+import socket
+
 
 
 #==================================================================
@@ -136,7 +138,9 @@ class CryoCon(object):
     #known serial device classes
     KNOWN_SERIAL_CLASSES = ['Serial', 'PySerial']
 
-
+    #Package buffer
+    MAX_BUFF_SIZE = 1024
+    
     def __init__(self):
         object.__init__(self)
 
@@ -173,7 +177,7 @@ class CryoCon(object):
             self.error_stream(msg)
             PyTango.Except.throw_exception('Communication init error', msg, '%s::_init_comms()' % self.get_name())
 
-
+    
     def _communicate_raw_Serial(self, cmd, output_expected=False, strip_string=True):
         self.lock.acquire()
         try:
@@ -217,8 +221,54 @@ class CryoCon(object):
             raise
         finally:
             self.lock.release()
+ 
+    def _init_eth_comms(self, ip, port, timeout=3):
+        self.socket_conf = (ip, int(port))
+        self.crycon_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.crycon_socket.connect(self.socket_conf)
+        self.buff = self.MAX_BUFF_SIZE
+        self._communicate_raw = self._communicate_raw_Eth
+        
+    def _communicate_raw_Eth(self, cmd, output_expected=False, 
+                             strip_string=True):
+        with self.lock:
+            try:
+                msg = ('In %s::_communicate_raw_Eth() command input: %s' 
+                       % (self.get_name(), cmd) )
+                self.debug_stream(msg)
+                self.crycon_socket.send(cmd+'\r\n')
+                if output_expected:
+                    result = self.crycon_socket.recv(self.buff)
+                    if len(result) == 0:
+                        msg = ('Got empty return value from the socket. This is'
+                               ' probably a communication error. Please check')
+                        self.error_stream(msg)
+                        method_name = ('%s::_communicate_raw_Eth()' 
+                                       % self.get_name()) 
+                        PyTango.Except.throw_exception('Communication error', 
+                                                       msg, method_name)
+                    read_ = result
+                    if strip_string:
+                        output = read_.strip()
+                    else:
+                        #preserve all characters except \n and \r
+                        output = filter(lambda x: x not in ('\r','\n'), read_) 
+                    
+                    msg = ('In %s::_communicate_raw_Eth(). Command output: %r'
+                           ' Return value: %r' % (self.get_name(), read_, 
+                                                  output))    
+                    self.debug_stream(msg)
+                    return output
 
+                
+            except Exception, e:
+                msg = ('In %s::_communicate_raw_Eth() unexpected '
+                       'exception: %s' % (self.get_name(), 
+                                          traceback.format_exc()))
+                self.error_stream(msg)
+                raise
 
+            
 #------------------------------------------------------------------
 # standard_attribute_state_machine
 #------------------------------------------------------------------
