@@ -106,6 +106,7 @@ class CryoConTempController(PyTango.Device_4Impl, CryoCon.CryoCon):
             #the first command issued in init_device gets no answer from the device if this
             #sleep is not done. This only happens with model M32. It has been reported to the
             #manufacturer but got no answer, so we have to live with this by now.
+            self._close_eth_comms()
             time.sleep(0.1)
         except Exception, e:
             msg = 'Error while trying to %s::delete_device(): %s' % (self.get_name(), str(e))
