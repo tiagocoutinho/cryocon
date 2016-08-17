@@ -163,7 +163,7 @@ class CryoConTempController(PyTango.Device_4Impl, CryoCon.CryoCon):
                     PyTango.Except.throw_exception('Bad parameter', 'Invalid UsedLoops: %s' % self.UsedLoops, '%s::init_device()' % self.get_name())
                 self.loops_keys = self.UsedLoops
             else:
-                self.loops_keys = LOOPS
+                self.loops_keys = self.LOOPS
 
            #channels initialization
             self.valid_units = self.VALID_UNITS
