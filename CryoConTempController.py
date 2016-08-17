@@ -154,7 +154,7 @@ class CryoConTempController(PyTango.Device_4Impl, CryoCon.CryoCon):
                     PyTango.Except.throw_exception('Bad parameter', 'Invalid UsedChannels: %s' % self.UsedChannels, '%s::init_device()' % self.get_name())
                 self.channels_keys = self.UsedChannels
             else:
-                self.channels_keys = CHANNELS
+                self.channels_keys = self.CHANNELS
 
             #initialize loops keys
             self.UsedLoops = list(self.UsedLoops)
