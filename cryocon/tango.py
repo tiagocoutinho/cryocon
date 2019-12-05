@@ -44,9 +44,6 @@
 ## along with this program; if not, see <http://www.gnu.org/licenses/>.
 ###############################################################################
 
-#import common functions class for subclassing
-import CryoCon
-
 #Alba imports
 import PyTango
 
@@ -54,6 +51,9 @@ import PyTango
 import sys
 import time
 import threading
+
+#import common functions class for subclassing
+from . import cryocon
 
 
 #==================================================================
@@ -66,7 +66,7 @@ import threading
 #
 #==================================================================
 
-class CryoConTempController(PyTango.Device_4Impl, CryoCon.CryoCon):
+class CryoConTempController(PyTango.Device_4Impl, cryocon.CryoCon):
 
 #--------- Add you global variables here --------------------------
 
@@ -86,7 +86,7 @@ class CryoConTempController(PyTango.Device_4Impl, CryoCon.CryoCon):
 #------------------------------------------------------------------
     def __init__(self,cl, name):
         PyTango.Device_4Impl.__init__(self,cl,name)
-        CryoCon.CryoCon.__init__(self)
+        cryocon.CryoCon.__init__(self)
         self._setup_standard_attributes()
         CryoConTempController.init_device(self)
 
@@ -170,14 +170,14 @@ class CryoConTempController(PyTango.Device_4Impl, CryoCon.CryoCon):
             self.valid_units_sensor = self.VALID_UNITS_SENSOR
             self.channels = {}
             for channel in self.channels_keys:
-                self.channels[channel] = CryoCon.Channel()
+                self.channels[channel] = cryocon.Channel()
             #update channels info
             self._update_channels_info()
 
             #loops initialization
             self.loops = {}
             for loop in self.loops_keys:
-                self.loops[loop] = CryoCon.Loop()
+                self.loops[loop] = cryocon.Loop()
             self.loops_types = self.LOOPS_TYPES
 
             #update loops info and units
