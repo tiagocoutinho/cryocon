@@ -108,7 +108,7 @@ class CryoConTempController(PyTango.Device_4Impl, cryocon.CryoCon):
             #manufacturer but got no answer, so we have to live with this by now.
             self._close_eth_comms()
             time.sleep(0.1)
-        except Exception, e:
+        except Exception as e:
             msg = 'Error while trying to %s::delete_device(): %s' % (self.get_name(), str(e))
             self.error_stream(msg)
 
@@ -139,7 +139,7 @@ class CryoConTempController(PyTango.Device_4Impl, cryocon.CryoCon):
                 self._init_comms()
             elif self.CommType == 'eth':
                 self._init_eth_comms(self.IP, self.Eth_Port)
-        except Exception, e:
+        except Exception as e:
             msg = 'In %s::init_device() error while initializing communication: %s' % (self.get_name(), repr(e))
             self.error_stream(msg)
             self._set_state(PyTango.DevState.FAULT, msg)
@@ -235,7 +235,7 @@ class CryoConTempController(PyTango.Device_4Impl, cryocon.CryoCon):
                 msg = 'Error while trying to set remote LED ON'
                 self._set_state(PyTango.DevState.FAULT, msg)
 
-        except Exception, e:
+        except Exception as e:
             msg = 'In %s::init_device() unexpected exception: %s' % (self.get_name(), repr(e))
             self.error_stream(msg)
             self._set_state(PyTango.DevState.FAULT, msg)
@@ -306,7 +306,7 @@ class CryoConTempController(PyTango.Device_4Impl, cryocon.CryoCon):
                 msg = 'Front panel has been unlocked! Please check why and then call init_device()'
                 self.error_stream(msg)
                 self._set_state(PyTango.DevState.FAULT, msg)
-        except Exception, e:
+        except Exception as e:
             msg = 'Unable to update device state: %s' % str(e)
             self.error_stream(msg)
             self._set_state(PyTango.DevState.FAULT, msg)
@@ -718,7 +718,7 @@ class CryoConTempController(PyTango.Device_4Impl, cryocon.CryoCon):
         cmd = self.CMD_CH_UNIT % (channel, unit) + self.CMD_SEPARATOR + self.CMD_CH_UNIT_QUERY % (channel)
         unit_rb = self._communicate_raw(cmd, output_expected=True, strip_string=False)
         #sensor units need a special treatment
-        if unit_rb in self.valid_units_sensor.keys():
+        if unit_rb in list(self.valid_units_sensor.keys()):
             unit_rb_translated = 'S'
         else:
             unit_rb_translated = unit_rb
@@ -950,7 +950,7 @@ class CryoConTempControllerClass(PyTango.DeviceClass):
         PyTango.DeviceClass.__init__(self, name)
 #        CryoCon.__init__()
         self.set_type(name)
-        print 'In CryoConTempControllerClass  constructor'
+        print('In CryoConTempControllerClass  constructor')
 
 #==================================================================
 #
@@ -966,10 +966,10 @@ def main(*args):
         U.server_init()
         U.server_run()
 
-    except PyTango.DevFailed,e:
-        print '-------> Received a DevFailed exception:',e
-    except Exception,e:
-        print '-------> An unforeseen exception occurred....',e
+    except PyTango.DevFailed as e:
+        print('-------> Received a DevFailed exception:',e)
+    except Exception as e:
+        print('-------> An unforeseen exception occurred....',e)
         raise
 
 

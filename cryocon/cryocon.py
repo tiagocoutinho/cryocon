@@ -188,10 +188,10 @@ class CryoCon(object):
                 if strip_string:
                     output = read_.strip()
                 else:
-                    output = filter(lambda x: x not in ('\r','\n'), read_) #preserve all characters except \n and \r
+                    output = [x for x in read_ if x not in ('\r','\n')] #preserve all characters except \n and \r
                 self.debug_stream('In %s::_communicate_raw_Serial(). Command output: %r Return value: %r' % (self.get_name(), read_, output))
                 return output
-        except Exception, e:
+        except Exception as e:
             self.error_stream('In %s::_communicate_raw_Serial() unexpected exception: %s' % (self.get_name(), traceback.format_exc()) )
             raise
         finally:
@@ -213,10 +213,10 @@ class CryoCon(object):
                 if strip_string:
                     output = read_.strip()
                 else:
-                    output = filter(lambda x: x not in ('\r','\n'), read_) #preserve all characters except \n and \r
+                    output = [x for x in read_ if x not in ('\r','\n')] #preserve all characters except \n and \r
                 self.debug_stream('In %s::_communicate_raw_PySerial(). Command output: %r Return value: %r' % (self.get_name(), read_, output))
                 return output
-        except Exception, e:
+        except Exception as e:
             self.error_stream('In %s::_communicate_raw_PySerial() unexpected exception: %s' % (self.get_name(), traceback.format_exc()))
             raise
         finally:
@@ -258,7 +258,7 @@ class CryoCon(object):
                         output = read_.strip()
                     else:
                         #preserve all characters except \n and \r
-                        output = filter(lambda x: x not in ('\r','\n'), read_) 
+                        output = [x for x in read_ if x not in ('\r','\n')] 
                     
                     msg = ('In %s::_communicate_raw_Eth(). Command output: %r'
                            ' Return value: %r' % (self.get_name(), read_, 
@@ -267,7 +267,7 @@ class CryoCon(object):
                     return output
 
                 
-            except Exception, e:
+            except Exception as e:
                 msg = ('In %s::_communicate_raw_Eth() unexpected '
                        'exception: %s' % (self.get_name(), 
                                           traceback.format_exc()))
@@ -388,7 +388,7 @@ class CryoCon(object):
             try:
                 self.last_ch_read_time = now
                 results = self._read_channels()
-            except Exception, e:
+            except Exception as e:
                 msg = 'In %s::read_Channels() error reading temperatures: %s' % (self.get_name(), traceback.format_exc())
                 self.error_stream(msg)
                 PyTango.Except.throw_exception('Communication error', msg, '%s::read_Channels()' % self.get_name())
@@ -427,7 +427,7 @@ class CryoCon(object):
         self.info_stream('In %s::read_LoopsOutputs()' % self.get_name())
 
         attr_name = attr.get_name()
-        loop = filter(lambda x: x.isdigit(), attr_name)
+        loop = [x for x in attr_name if x.isdigit()]
 
         if loop not in self.loops_keys:
             msg = 'Invalid loop %s in %s::read_LoopsOutputs()' % (loop, self.get_name())
@@ -445,7 +445,7 @@ class CryoCon(object):
             try:
                 self.last_loops_outputs_read_time = now
                 results = self._read_loops_outputs()
-            except Exception, e:
+            except Exception as e:
                 msg = 'In %s::read_LoopsOutputs() error reading outputs: %s' % (self.get_name(), traceback.format_exc())
                 self.error_stream(msg)
                 PyTango.Except.throw_exception('Communication error', msg, '%s::read_LoopsOutputs()' % self.get_name())
@@ -475,7 +475,7 @@ class CryoCon(object):
         self.info_stream('In %s::read_Loop1Range()' % self.get_name())
 
         attr_name = attr.get_name()
-        loop = filter(lambda x: x.isdigit(), attr_name)
+        loop = [x for x in attr_name if x.isdigit()]
         loop = str(loop)
 
         if (loop != '1'):
@@ -495,7 +495,7 @@ class CryoCon(object):
                 self.last_loops_ranges_read_time = now
                 cmd = self.CMD_LOOP_RANGE_QUERY % loop
                 read_range = self._communicate_raw(cmd, output_expected=True)
-            except Exception, e:
+            except Exception as e:
                 self.loops[loop].range = 'Unknown'
                 msg = 'In %s::read_Loop1Range_() error reading range: %s' % (self.get_name(), traceback.format_exc())
                 self.error_stream(msg)
@@ -521,7 +521,7 @@ class CryoCon(object):
         self.info_stream('In %s::read_LoopsRates()' % self.get_name())
 
         attr_name = attr.get_name()
-        loop = filter(lambda x: x.isdigit(), attr_name)
+        loop = [x for x in attr_name if x.isdigit()]
 
         if (loop not in self.loops_keys) or not (self.loops[loop].source in self.channels_keys):
             msg = 'Invalid loop %s in %s::read_LoopsRates()' % (loop, self.get_name())
@@ -539,7 +539,7 @@ class CryoCon(object):
             try:
                 self.last_loops_rates_read_time = now
                 results = self._read_loops_rates()
-            except Exception, e:
+            except Exception as e:
                 msg = 'In %s::read_LoopsRates() error reading ramping rates: %s' % (self.get_name(), traceback.format_exc())
                 self.error_stream(msg)
                 PyTango.Except.throw_exception('Communication error', msg, '%s::read_LoopsRates()' % self.get_name())
@@ -569,7 +569,7 @@ class CryoCon(object):
         self.info_stream('In %s::read_LoopsSetPoints()' % self.get_name())
 
         attr_name = attr.get_name()
-        loop = filter(lambda x: x.isdigit(), attr_name)
+        loop = [x for x in attr_name if x.isdigit()]
         loop = str(loop)
 
         if (loop not in self.loops_keys) or not (self.loops[loop].source in self.channels_keys):
@@ -579,7 +579,7 @@ class CryoCon(object):
         #read from hardware
         try:
             results = self._read_loops_setpoints()
-        except Exception, e:
+        except Exception as e:
             msg = 'In %s::read_LoopsSetPoints() error reading setpoints: %s' % (self.get_name(), traceback.format_exc())
             self.error_stream(msg)
             PyTango.Except.throw_exception('Communication error', msg, '%s::read_LoopsSetPoints()' % self.get_name())
@@ -596,7 +596,7 @@ class CryoCon(object):
                 value = float('NaN')
                 msg = 'In %s::read_LoopsSetPoints() Error reading loop %s set point: %s' % (self.get_name(), loop_, read_setpoint)
                 self.error_stream(msg)
-            except Exception, e:
+            except Exception as e:
                 value = float('NaN')
                 msg = 'In %s::read_LoopsSetPoints() unexpected exception: %s' % (self.get_name(), traceback.format_exc())
                 self.error_stream(msg)
@@ -617,7 +617,7 @@ class CryoCon(object):
         self.info_stream('In %s::read_LoopsTypes()' % self.get_name())
 
         attr_name = attr.get_name()
-        loop = filter(lambda x: x.isdigit(), attr_name)
+        loop = [x for x in attr_name if x.isdigit()]
         loop = str(loop)
 
         if loop not in self.loops_keys:
@@ -627,7 +627,7 @@ class CryoCon(object):
         #read from hardware
         try:
             results = self._read_loops_types()
-        except Exception, e:
+        except Exception as e:
             msg = 'In %s::read_LoopsTypes() error reading loops types: %s' % (self.get_name(), traceback.format_exc())
             self.error_stream(msg)
             PyTango.Except.throw_exception('Communication error', msg, '%s::read_LoopsTypes()' % self.get_name())
@@ -652,7 +652,7 @@ class CryoCon(object):
     def write_LoopPowerManual(self, attr):
         self.info_stream('In %s::write_LoopPowerManual()' % self.get_name())
         attr_name = attr.get_name()
-        loop = filter(lambda x: x.isdigit(), attr_name)
+        loop = [x for x in attr_name if x.isdigit()]
         loop = int(loop)
         power = attr.get_write_value()
         self._write_loop_power_manual(loop, power)
@@ -664,7 +664,7 @@ class CryoCon(object):
     def write_Loop1Range_(self, attr):
         self.info_stream('In %s::write_Loop1Range()' % self.get_name())
         attr_name = attr.get_name()
-        loop = filter(lambda x: x.isdigit(), attr_name)
+        loop = [x for x in attr_name if x.isdigit()]
         loop = int(loop)
         range_ = attr.get_write_value()
         self._write_loop_range(loop, range_)
@@ -676,7 +676,7 @@ class CryoCon(object):
     def write_LoopRate(self, attr):
         self.info_stream('In %s::write_LoopRate()' % self.get_name())
         attr_name = attr.get_name()
-        loop = filter(lambda x: x.isdigit(), attr_name)
+        loop = [x for x in attr_name if x.isdigit()]
         loop = int(loop)
         rate = attr.get_write_value()
         self._write_loop_rate(loop, rate)
@@ -688,7 +688,7 @@ class CryoCon(object):
     def write_LoopSetPoint(self, attr):
         self.info_stream('In %s::write_LoopSetPoint()' % self.get_name())
         attr_name = attr.get_name()
-        loop = filter(lambda x: x.isdigit(), attr_name)
+        loop = [x for x in attr_name if x.isdigit()]
         loop = int(loop)
         set_point = attr.get_write_value()
         self._write_loop_set_point(loop, set_point)
@@ -700,7 +700,7 @@ class CryoCon(object):
     def write_LoopType(self, attr):
         self.info_stream('In %s::write_LoopType()' % self.get_name())
         attr_name = attr.get_name()
-        loop = filter(lambda x: x.isdigit(), attr_name)
+        loop = [x for x in attr_name if x.isdigit()]
         loop = int(loop)
         type_ = attr.get_write_value()
         self._write_loop_type(loop, type_)
