@@ -1063,9 +1063,11 @@ class CryoConTempControllerClass(PyTango.DeviceClass):
 # ==================================================================
 
 
-def main(*args):
+def main(args=None):
+    if args is None:
+        args = sys.argv
     try:
-        py = PyTango.Util(*args)
+        py = PyTango.Util(args)
         py.add_class(CryoConTempControllerClass, CryoConTempController)
 
         U = PyTango.Util.instance()
@@ -1085,4 +1087,4 @@ def main(*args):
 #
 # ==================================================================
 if __name__ == '__main__':
-    main(sys.argv)
+    main()
