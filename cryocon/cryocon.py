@@ -170,7 +170,7 @@ class CryoCon(object):
                     output = read_.strip()
                 else:
                     # preserve all characters except \n and \r
-                    output = [x for x in read_ if x not in ('\r', '\n')]
+                    output = _read.replace('\n', '').replace('\r', '')
                 self.debug_stream(
                     'In %s::_communicate_raw_Serial(). Command output: %r Return value: %r' %
                     (self.get_name(), read_, output))
@@ -209,7 +209,7 @@ class CryoCon(object):
                     output = read_.strip()
                 else:
                     # preserve all characters except \n and \r
-                    output = [x for x in read_ if x not in ('\r', '\n')]
+                    output = read_.replace('\r', '').replace('\n', '')
                 self.debug_stream(
                     'In %s::_communicate_raw_PySerial(). Command output: %r Return value: %r' %
                     (self.get_name(), read_, output))
@@ -242,9 +242,9 @@ class CryoCon(object):
                 msg = ('In %s::_communicate_raw_Eth() command input: %s'
                        % (self.get_name(), cmd))
                 self.debug_stream(msg)
-                self.crycon_socket.send(cmd + '\r\n')
+                self.crycon_socket.send(cmd.encode() + b'\r\n')
                 if output_expected:
-                    result = self.crycon_socket.recv(self.buff)
+                    result = self.crycon_socket.recv(self.buff).decode()
                     if len(result) == 0:
                         msg = (
                             'Got empty return value from the socket. This is'
@@ -259,7 +259,7 @@ class CryoCon(object):
                         output = read_.strip()
                     else:
                         # preserve all characters except \n and \r
-                        output = [x for x in read_ if x not in ('\r', '\n')]
+                        output = read_.replace('\r', '').replace('\n', '')
 
                     msg = ('In %s::_communicate_raw_Eth(). Command output: %r'
                            ' Return value: %r' % (self.get_name(), read_,
@@ -455,7 +455,7 @@ class CryoCon(object):
         self.info_stream('In %s::read_LoopsOutputs()' % self.get_name())
 
         attr_name = attr.get_name()
-        loop = [x for x in attr_name if x.isdigit()]
+        loop = ''.join(filter(lambda x: x.isdigit(), attr_name))
 
         if loop not in self.loops_keys:
             msg = 'Invalid loop %s in %s::read_LoopsOutputs()' % (loop, self.get_name())
@@ -509,8 +509,7 @@ class CryoCon(object):
         self.info_stream('In %s::read_Loop1Range()' % self.get_name())
 
         attr_name = attr.get_name()
-        loop = [x for x in attr_name if x.isdigit()]
-        loop = str(loop)
+        loop = ''.join(filter(lambda x: x.isdigit(), attr_name))
 
         if (loop != '1'):
             msg = 'Invalid loop %s in %s::read_Loop1Range()' % (loop, self.get_name())
@@ -561,7 +560,7 @@ class CryoCon(object):
         self.info_stream('In %s::read_LoopsRates()' % self.get_name())
 
         attr_name = attr.get_name()
-        loop = [x for x in attr_name if x.isdigit()]
+        loop = ''.join(filter(lambda x: x.isdigit(), attr_name))
 
         if (loop not in self.loops_keys) or not (
                 self.loops[loop].source in self.channels_keys):
@@ -616,8 +615,7 @@ class CryoCon(object):
         self.info_stream('In %s::read_LoopsSetPoints()' % self.get_name())
 
         attr_name = attr.get_name()
-        loop = [x for x in attr_name if x.isdigit()]
-        loop = str(loop)
+        loop = ''.join(filter(lambda x: x.isdigit(), attr_name))
 
         if (loop not in self.loops_keys) or not (
                 self.loops[loop].source in self.channels_keys):
@@ -674,8 +672,7 @@ class CryoCon(object):
         self.info_stream('In %s::read_LoopsTypes()' % self.get_name())
 
         attr_name = attr.get_name()
-        loop = [x for x in attr_name if x.isdigit()]
-        loop = str(loop)
+        loop = ''.join(filter(lambda x: x.isdigit(), attr_name))
 
         if loop not in self.loops_keys:
             attr.set_quality(PyTango.AttrQuality.ATTR_INVALID)
@@ -715,7 +712,7 @@ class CryoCon(object):
     def write_LoopPowerManual(self, attr):
         self.info_stream('In %s::write_LoopPowerManual()' % self.get_name())
         attr_name = attr.get_name()
-        loop = [x for x in attr_name if x.isdigit()]
+        loop = ''.join(filter(lambda x: x.isdigit(), attr_name))
         loop = int(loop)
         power = attr.get_write_value()
         self._write_loop_power_manual(loop, power)
@@ -728,7 +725,7 @@ class CryoCon(object):
     def write_Loop1Range_(self, attr):
         self.info_stream('In %s::write_Loop1Range()' % self.get_name())
         attr_name = attr.get_name()
-        loop = [x for x in attr_name if x.isdigit()]
+        loop = ''.join(filter(lambda x: x.isdigit(), attr_name))
         loop = int(loop)
         range_ = attr.get_write_value()
         self._write_loop_range(loop, range_)
@@ -741,7 +738,7 @@ class CryoCon(object):
     def write_LoopRate(self, attr):
         self.info_stream('In %s::write_LoopRate()' % self.get_name())
         attr_name = attr.get_name()
-        loop = [x for x in attr_name if x.isdigit()]
+        loop = ''.join(filter(lambda x: x.isdigit(), attr_name))
         loop = int(loop)
         rate = attr.get_write_value()
         self._write_loop_rate(loop, rate)
@@ -754,7 +751,7 @@ class CryoCon(object):
     def write_LoopSetPoint(self, attr):
         self.info_stream('In %s::write_LoopSetPoint()' % self.get_name())
         attr_name = attr.get_name()
-        loop = [x for x in attr_name if x.isdigit()]
+        loop = ''.join(filter(lambda x: x.isdigit(), attr_name))
         loop = int(loop)
         set_point = attr.get_write_value()
         self._write_loop_set_point(loop, set_point)
@@ -767,7 +764,7 @@ class CryoCon(object):
     def write_LoopType(self, attr):
         self.info_stream('In %s::write_LoopType()' % self.get_name())
         attr_name = attr.get_name()
-        loop = [x for x in attr_name if x.isdigit()]
+        loop = ''.join(filter(lambda x: x.isdigit(), attr_name))
         loop = int(loop)
         type_ = attr.get_write_value()
         self._write_loop_type(loop, type_)
