@@ -18,6 +18,27 @@ def create_device(address, channels, loops):
             'address {!r} not supported'.format(address))
 
 
+ATTR_MAP = {
+    'channela': lambda ctrl: ctrl['A'].temperature,
+    'channelb': lambda ctrl: ctrl['B'].temperature,
+    'channelc': lambda ctrl: ctrl['C'].temperature,
+    'channeld': lambda ctrl: ctrl['D'].temperature,
+    'loop1output': lambda ctrl: ctrl[1].output_power,
+    'loop2output': lambda ctrl: ctrl[2].output_power,
+    'loop3output': lambda ctrl: ctrl[3].output_power,
+    'loop4output': lambda ctrl: ctrl[4].output_power,
+    'loop1range': lambda ctrl: ctrl[1].range,
+    'loop1rate': lambda ctrl: ctrl[1].rate,
+    'loop2rate': lambda ctrl: ctrl[2].rate,
+    'loop3rate': lambda ctrl: ctrl[3].rate,
+    'loop4rate': lambda ctrl: ctrl[4].rate,
+    'loop1setpoint': lambda ctrl: ctrl[1].set_point,
+    'loop2setpoint': lambda ctrl: ctrl[2].set_point,
+    'loop3setpoint': lambda ctrl: ctrl[3].set_point,
+    'loop4setpoint': lambda ctrl: ctrl[4].set_point,
+}
+
+
 class CryoConTempController(Device):
 
     address = device_property(str)
@@ -32,82 +53,89 @@ class CryoConTempController(Device):
         self._temperatures = None
         channels = ''.join(self.UsedChannels)
         loops = self.UsedLoops
-        self.cryocon = create_device(self.address, channels, loops)
 
-    @property
-    def temperatures(self):
-        if time.time() - self.last_read_time > self.ReadValidityPeriod:
-            self._temperatures = self.cryocon.temperatures
-            self.last_read_time = time.time()
-        return self._temperatures
+        self.cryocon = create_device(self.address, channels, loops)
+        self.last_values = {}
+
+    def read_attr_hardware(self, indexes):
+        multi_attr = self.get_device_attr()
+        names = []
+        import time
+        with self.cryocon as group:
+            for index in indexes:
+                attr = multi_attr.get_attr_by_ind(index)
+                attr_name = attr.get_name().lower()
+                ATTR_MAP[attr_name](self.cryocon)
+                names.append(attr_name)
+        self.last_values = dict(zip(names, group.replies))
 
     @attribute
     def channelA(self):
-        return self.temperatures['A']
+        return self.last_values['channela']
 
     @attribute
     def channelB(self):
-        return self.temperatures['B']
+        return self.last_values['channelb']
 
     @attribute
     def channelC(self):
-        return self.temperatures['C']
+        return self.last_values['channelc']
 
     @attribute
     def channelD(self):
-        return self.temperatures['D']
+        return self.last_values['channeld']
 
     @attribute
     def loop1output(self):
-        return self.cryocon[1].output_power
+        return self.last_values['loop1output']
 
     @attribute(unit='%')
     def loop2output(self):
-        return self.cryocon[2].output_power
+        return self.last_values['loop2output']
 
     @attribute(unit='%')
-    def loop2output(self):
-        return self.cryocon[3].output_power
+    def loop3output(self):
+        return self.last_values['loop3output']
 
     @attribute(unit='%')
     def loop4output(self):
-        return self.cryocon[4].output_power
+        return self.last_values['loop4output']
 
     @attribute(dtype=str)
     def loop1range(self):
-        return self.cryocon[1].range
+        return self.last_values['loop1range']
 
     @attribute
     def loop1rate(self):
-        return self.cryocon[1].rate
+        return self.last_values['loop1rate']
 
     @attribute
     def loop2rate(self):
-        return self.cryocon[2].rate
+        return self.last_values['loop2rate']
 
     @attribute
     def loop3rate(self):
-        return self.cryocon[3].rate
+        return self.last_values['loop3rate']
 
     @attribute
     def loop4rate(self):
-        return self.cryocon[4].rate
+        return self.last_values['loop4rate']
 
     @attribute
     def loop1setpoint(self):
-        return self.cryocon[1].set_point
+        return self.last_values['loop1setpoint']
 
     @attribute
     def loop2setpoint(self):
-        return self.cryocon[2].set_point
+        return self.last_values['loop2setpoint']
 
     @attribute
     def loop3setpoint(self):
-        return self.cryocon[3].set_point
+        return self.last_values['loop3setpoint']
 
     @attribute
     def loop4setpoint(self):
-        return self.cryocon[4].set_point
+        return self.last_values['loop4setpoint']
 
     @command
     def on(self):
@@ -119,7 +147,7 @@ class CryoConTempController(Device):
 
     @command(dtype_in=str, dtype_out=str)
     def run(self, cmd):
-        return self.cryocon._query(cmd)
+        return self.cryocon._ask(cmd)
 
     @command(dtype_in=[str])
     def setchannelunit(self, unit):

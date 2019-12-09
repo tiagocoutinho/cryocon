@@ -1,12 +1,27 @@
 import sockio.sio
 
 
-class Channel:
+OUT_OF_RANGE = '_______'
+OUT_OF_LIMIT = '.......'
+DISABLED = ''
+UNITS = ('K', 'C', 'F', 'S')
 
-    OUT_OF_RANGE = '_______'
-    OUT_OF_LIMIT = '.......'
-    DISABLED = ''
-    UNITS = ('K', 'C', 'F', 'S')
+
+def to_float(text):
+    if text in (OUT_OF_LIMIT, OUT_OF_RANGE):
+        text = 'nan'
+    return float(text)
+
+
+def to_float_unit(text):
+    return to_float(text[:-1])
+
+
+def to_on_off(text):
+    return text.upper() == 'ON'
+
+
+class Channel:
 
     def __init__(self, name, ctrl):
         self.name = name
@@ -14,12 +29,12 @@ class Channel:
 
     @property
     def temperature(self):
-        cmd = 'INPUT? {}'.format(self.name)
-        return float(self.ctrl._query(cmd))
+        cmd = ':INPUT {}:TEMP?'.format(self.name)
+        return self.ctrl._query(cmd, to_float)
 
     @property
     def unit(self):
-        cmd = 'INPUT {}:UNITS?'.format(self.name)
+        cmd = ':INPUT {}:UNITS?'.format(self.name)
         return self.ctrl._query(cmd)
 
 
@@ -32,12 +47,12 @@ class Loop:
         self.nb = nb
         self.ctrl = ctrl
 
-    def _query(self, cmd):
-        cmd = 'LOOP {}:{}?'.format(self.nb, cmd)
-        return self.ctrl._query(cmd)
+    def _query(self, cmd, func=lambda x: x):
+        cmd = ':LOOP {}:{}?'.format(self.nb, cmd)
+        return self.ctrl._query(cmd, func)
 
     def _command(self, cmd, value):
-        cmd = 'LOOP {}:{} {}'.format(self.nb, cmd, value)
+        cmd = ':LOOP {}:{} {}'.format(self.nb, cmd, value)
         self.ctrl._command(cmd, value)
 
     @property
@@ -50,7 +65,7 @@ class Loop:
 
     @property
     def output_power(self):
-        return float(self._query('OUTPWR'))
+        return self._query('OUTPWR', to_float)
 
     @property
     def range(self):
@@ -58,19 +73,38 @@ class Loop:
 
     @property
     def rate(self):
-        return float(self._query('RATE'))
+        return self._query('RATE', to_float)
 
     @property
     def set_point(self):
-        return float(self._query('SETPT'))
+        return self._query('SETPT', to_float_unit)
 
 
 class CryoCon:
+
+    class Group:
+
+        def __init__(self, ctrl):
+            self.ctrl = ctrl
+            self.cmds = []
+            self.funcs = []
+
+        def append(self, cmd, func):
+            self.cmds.append(cmd)
+            self.funcs.append(func)
+
+        def query(self):
+            request = ';'.join(self.cmds)
+            reply = self.ctrl._ask(request)
+            replies = (msg.strip() for msg in reply.split(';'))
+            replies = [func(text) for func, text in zip(self.funcs, replies)]
+            self.replies = replies
 
     def __init__(self, host, port=5000, channels='ABCD', loops=(1,2)):
         self._conn = sockio.sio.TCP(host, port)
         self.channels = {channel:Channel(channel, self) for channel in channels}
         self.loops = {loop:Loop(loop, self) for loop in loops}
+        self.group = None
 
     def __getitem__(self, key):
         try:
@@ -78,10 +112,25 @@ class CryoCon:
         except KeyError:
             return self.loops[key]
 
-    def _query(self, cmd):
+    def __enter__(self):
+        self.group = self.Group(self)
+        return self.group
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.group.query()
+        self.group = None
+
+    def _ask(self, cmd):
         if cmd[-1] not in ('\n', '\r'):
             cmd += '\n'
-        return self._conn.write_readline(cmd.encode()).strip().decode()
+        reply = self._conn.write_readline(cmd.encode()).strip().decode()
+        return reply
+
+    def _query(self, cmd, func=lambda x: x):
+        if self.group is None:
+            return func(self._ask(cmd))
+        else:
+            self.group.append(cmd, func)
 
     def _command(self, cmd):
         if cmd[-1] not in ('\n', '\r'):
@@ -90,18 +139,19 @@ class CryoCon:
 
     @property
     def idn(self):
-        return self._query('*IDN?')
+        return self._query(':*IDN?')
 
     @property
     def temperatures(self):
+        raise NotImplementedError
         cnames = sorted(self.channels)
-        cmd = 'INPUT? {}'.format(','.join(name for name in cnames))
-        values = self._query(cmd).split(';')
-        return dict(zip(cnames, map(float, values)))
+        cmd = ':INPUT? {}'.format(','.join(name for name in cnames))
+        func = lambda text: dict(zip(cnames, map(to_float, text.split(';'))))
+        return self._ask(cmd, func)
 
     @property
     def control(self):
-        return self._query('CONTROL?') in ('on', 'ON')
+        return self._query(':CONTROL?', to_on_off)
 
     @control.setter
     def control(self, onoff):
@@ -110,28 +160,27 @@ class CryoCon:
 
     @property
     def lockout(self):
-        return self._query('SYSTEM:LOCKOUT?') in ('on', 'ON')
+        return self._query(':SYSTEM:LOCKOUT?', to_on_off)
 
     @lockout.setter
     def lockout(self, onoff):
         value = 'ON' if onoff in (True, 'on', 'ON') else 'OFF'
-        self._command('SYSTEM:LOCKOUT {}'.format(value))
+        self._command(':SYSTEM:LOCKOUT {}'.format(value))
 
     @property
     def led(self):
-        return self._query('SYSTEM:REMLED?') in ('on', 'ON')
+        return self._query(':SYSTEM:REMLED?', to_on_off)
 
     @led.setter
     def led(self, onoff):
         value = 'ON' if onoff in (True, 'on', 'ON') else 'OFF'
-        self._command('SYSTEM:REMLED {}\n'.format(value))
+        self._command(':SYSTEM:REMLED {}\n'.format(value))
 
     @property
     def display_filter_time(self):
-        return float(self._query('SYSTEM:DISTC?'))
+        return self._query(':SYSTEM:DISTC?', to_float)
 
     @display_filter_time.setter
     def display_filter_time(self, value):
         assert value in (0.5, 1, 2, 4, 8, 16, 32 or 64)
-        self._command('SYSTEM:DISTC {}'.format(value))
-
+        self._command(':SYSTEM:DISTC {}'.format(value))
