@@ -5,6 +5,15 @@ OUT_OF_RANGE = '_______'
 OUT_OF_LIMIT = '.......'
 DISABLED = ''
 UNITS = ('K', 'C', 'F', 'S')
+NAK = 'NAK'
+
+#Delta read back tolerance
+DELTA_RB = 0.0000001 #6 decimals precision
+#setpoints seem to have some kind of preset values when not in K or S units
+DELTA_RB_SETPT = 0.0001
+
+TYPES = ['OFF', 'PID', 'MAN', 'TABLE', 'RAMPP', 'RAMPT']
+RANGES = ['HI', 'MID', 'LOW']
 
 
 def to_float(text):
@@ -19,6 +28,10 @@ def to_float_unit(text):
 
 def to_on_off(text):
     return text.upper() == 'ON'
+
+
+class CryoConError(Exception):
+    pass
 
 
 class Channel:
@@ -40,9 +53,6 @@ class Channel:
 
 class Loop:
 
-    TYPES = ['OFF', 'PID', 'MAN', 'TABLE', 'RAMPP', 'RAMPT']
-    RANGES = ['HI', 'MID', 'LOW']
-
     def __init__(self, nb, ctrl):
         self.nb = nb
         self.ctrl = ctrl
@@ -53,7 +63,7 @@ class Loop:
 
     def _command(self, cmd, value):
         cmd = ':LOOP {}:{} {}'.format(self.nb, cmd, value)
-        self.ctrl._command(cmd, value)
+        self.ctrl._command(cmd)
 
     @property
     def source(self):
@@ -67,17 +77,45 @@ class Loop:
     def output_power(self):
         return self._query('OUTPWR', to_float)
 
+    @output_power.setter
+    def output_power(self, power):
+        if self.type != 'MAN':
+            raise CryoConError('Loop must be in manual mode to set output power')
+        self._query('OUTPWR {}'.format(power))
+        rb = self.output_power
+        if abs(rb - power) > DELTA_RB:
+            raise CryoConError(
+                'Written power {!r} differs from the one read back from '
+                'instrument {!r}'.format(power, rb))
+
     @property
     def range(self):
         return self._query('RANGE')
+
+    @range.setter
+    def range(self, rng):
+        if self.nb != 1:
+            raise IndexError('Can only set range for loop 1')
+        if rng.upper() not in RANGES:
+            raise ValueError('Invalid loop range {!r}. Valid ranges are: {}'.
+                             format(rng, ','.join(RANGES)))
+        self._query('RANGE {}'.format(rng))
 
     @property
     def rate(self):
         return self._query('RATE', to_float)
 
+    @rate.setter
+    def rate(self, rate):
+        self._query('RATE {}'.format(rate))
+
     @property
     def set_point(self):
         return self._query('SETPT', to_float_unit)
+
+    @set_point.setter
+    def set_point(self, set_point):
+        self._query('SETPT {}'.format(set_point))
 
 
 class CryoCon:
@@ -140,14 +178,6 @@ class CryoCon:
     @property
     def idn(self):
         return self._query(':*IDN?')
-
-    @property
-    def temperatures(self):
-        raise NotImplementedError
-        cnames = sorted(self.channels)
-        cmd = ':INPUT? {}'.format(','.join(name for name in cnames))
-        func = lambda text: dict(zip(cnames, map(to_float, text.split(';'))))
-        return self._ask(cmd, func)
 
     @property
     def control(self):
