@@ -30,6 +30,7 @@ def float_attr(value):
 
 
 ATTR_MAP = {
+    'idn': lambda cryo: cryo.idn,
     'channela': lambda cryo: cryo['A'].temperature,
     'channelb': lambda cryo: cryo['B'].temperature,
     'channelc': lambda cryo: cryo['C'].temperature,
@@ -113,6 +114,10 @@ class CryoConTempController(Device):
                 'On' if self.cryocon.control else 'Off')
         except Exception as err:
             return 'Error: {!r}'.format(err)
+
+    @attribute(dtype=str)
+    def idn(self):
+        return self.last_values['idn']
 
     @attribute
     def channelA(self):
