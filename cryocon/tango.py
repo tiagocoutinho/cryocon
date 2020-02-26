@@ -52,7 +52,7 @@ class CryoConTempController(Device):
 
     address = device_property(str)
     UsedChannels = device_property([str], default_value='ABCD')
-    UsedLoops = device_property([int], default_value=[1, 2])
+    UsedLoops = device_property([int], default_value=[1, 2, 3, 4])
     ReadValidityPeriod = device_property(float, default_value=0.1)
     AutoLockFrontPanel = device_property(bool, default_value=False)
 
