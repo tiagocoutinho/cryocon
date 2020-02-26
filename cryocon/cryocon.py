@@ -1,3 +1,6 @@
+import logging
+import functools
+
 import sockio.sio
 
 
@@ -18,7 +21,7 @@ RANGES = ['HI', 'MID', 'LOW']
 
 def to_float(text):
     if text in (OUT_OF_LIMIT, OUT_OF_RANGE):
-        text = 'nan'
+        return None
     return float(text)
 
 
@@ -30,48 +33,70 @@ def to_on_off(text):
     return text.upper() == 'ON'
 
 
+def from_name(text):
+    return '"{}"'.format(text)
+
+
 class CryoConError(Exception):
     pass
 
 
+class _Property:
+
+    def __init__(self, prefix, name, fget=lambda x: x, fset=lambda x: x):
+        self.cmd = ':{} {{}}:{}'.format(prefix.upper(), name.upper())
+        self.fget = fget
+        self.fset = fset
+
+    def __get__(self, obj, owner=None):
+        if self.fget is None:
+            raise AttributeError("can't set attribute")
+        cmd = self.cmd.format(obj.id) + '?'
+        return obj.ctrl._query(cmd, self.fget)
+
+    def __set__(self, obj, value):
+        if self.fset is None:
+            raise AttributeError("can't set attribute")
+        cmd = '{} {}'.format(self.cmd.format(obj.id), self.fset(value))
+        reply = obj.ctrl._command(cmd)
+
+
+channel_property = functools.partial(_Property, 'INPUT')
+loop_property = functools.partial(_Property, 'LOOP')
+
+
 class Channel:
 
-    def __init__(self, name, ctrl):
-        self.name = name
+    name = channel_property('nam', fset=from_name)
+    temperature = channel_property('temp', to_float)
+    unit = channel_property('unit')
+    variance = channel_property('vari', to_float)
+    slope = channel_property('slop', to_float)
+    alarm = channel_property('alar')
+
+    def __init__(self, channel, ctrl):
+        self.id = channel
         self.ctrl = ctrl
-
-    @property
-    def temperature(self):
-        cmd = ':INPUT {}:TEMP?'.format(self.name)
-        return self.ctrl._query(cmd, to_float)
-
-    @property
-    def unit(self):
-        cmd = ':INPUT {}:UNITS?'.format(self.name)
-        return self.ctrl._query(cmd)
 
 
 class Loop:
 
+    source = loop_property('source')
+    type = loop_property('type')
+    rate = loop_property('rate', to_float)
+    set_point = loop_property('setpt', to_float_unit)
+
     def __init__(self, nb, ctrl):
-        self.nb = nb
+        self.id = nb
         self.ctrl = ctrl
 
     def _query(self, cmd, func=lambda x: x):
-        cmd = ':LOOP {}:{}?'.format(self.nb, cmd)
+        cmd = ':LOOP {}:{}?'.format(self.id, cmd)
         return self.ctrl._query(cmd, func)
 
     def _command(self, cmd, value):
-        cmd = ':LOOP {}:{} {}'.format(self.nb, cmd, value)
+        cmd = ':LOOP {}:{} {}'.format(self.id, cmd, value)
         self.ctrl._command(cmd)
-
-    @property
-    def source(self):
-        return self._query('SOURCE')
-
-    @property
-    def type(self):
-        return self._query('TYPE')
 
     @property
     def output_power(self):
@@ -94,28 +119,12 @@ class Loop:
 
     @range.setter
     def range(self, rng):
-        if self.nb != 1:
+        if self.id != 1:
             raise IndexError('Can only set range for loop 1')
         if rng.upper() not in RANGES:
             raise ValueError('Invalid loop range {!r}. Valid ranges are: {}'.
                              format(rng, ','.join(RANGES)))
         self._query('RANGE {}'.format(rng))
-
-    @property
-    def rate(self):
-        return self._query('RATE', to_float)
-
-    @rate.setter
-    def rate(self, rate):
-        self._query('RATE {}'.format(rate))
-
-    @property
-    def set_point(self):
-        return self._query('SETPT', to_float_unit)
-
-    @set_point.setter
-    def set_point(self, set_point):
-        self._query('SETPT {}'.format(set_point))
 
 
 class CryoCon:
@@ -159,9 +168,10 @@ class CryoCon:
         self.group = None
 
     def _ask(self, cmd):
-        if cmd[-1] not in ('\n', '\r'):
-            cmd += '\n'
+        cmd += '\n'
+        logging.info('REQ: %r', cmd)
         reply = self._conn.write_readline(cmd.encode()).strip().decode()
+        logging.info('REP: %r', reply)
         return reply
 
     def _query(self, cmd, func=lambda x: x):
@@ -171,9 +181,8 @@ class CryoCon:
             self.group.append(cmd, func)
 
     def _command(self, cmd):
-        if cmd[-1] not in ('\n', '\r'):
-            cmd += '\n'
-        self._conn.write(cmd.encode())
+        reply = self._ask(cmd)
+        assert not reply
 
     @property
     def idn(self):
@@ -204,7 +213,7 @@ class CryoCon:
     @led.setter
     def led(self, onoff):
         value = 'ON' if onoff in (True, 'on', 'ON') else 'OFF'
-        self._command(':SYSTEM:REMLED {}\n'.format(value))
+        self._command(':SYSTEM:REMLED {}'.format(value))
 
     @property
     def display_filter_time(self):

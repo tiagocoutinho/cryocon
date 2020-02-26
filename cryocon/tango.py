@@ -1,3 +1,5 @@
+import time
+
 from tango import DevState, AttrQuality
 from tango.server import Device, attribute, command, device_property
 
@@ -20,29 +22,29 @@ def create_device(address, channels, loops):
 
 
 def float_attr(value):
-    if value in (None, float('nan')):
-        return None, time.time(), AttrQuality.ATTR_INVALID
+    if value is None:
+        return float('nan'), time.time(), AttrQuality.ATTR_INVALID
     return value
 
 
 ATTR_MAP = {
-    'channela': lambda cryo: float_attr(cryo['A'].temperature),
-    'channelb': lambda cryo: float_attr(cryo['B'].temperature),
-    'channelc': lambda cryo: float_attr(cryo['C'].temperature),
-    'channeld': lambda cryo: float_attr(cryo['D'].temperature),
-    'loop1output': lambda cryo: float_attr(cryo[1].output_power),
-    'loop2output': lambda cryo: float_attr(cryo[2].output_power),
-    'loop3output': lambda cryo: float_attr(cryo[3].output_power),
-    'loop4output': lambda cryo: float_attr(cryo[4].output_power),
-    'loop1range': lambda cryo: float_attr(cryo[1].range),
-    'loop1rate': lambda cryo: float_attr(cryo[1].rate),
-    'loop2rate': lambda cryo: float_attr(cryo[2].rate),
-    'loop3rate': lambda cryo: float_attr(cryo[3].rate),
-    'loop4rate': lambda cryo: float_attr(cryo[4].rate),
-    'loop1setpoint': lambda cryo: float_attr(cryo[1].set_point),
-    'loop2setpoint': lambda cryo: float_attr(cryo[2].set_point),
-    'loop3setpoint': lambda cryo: float_attr(cryo[3].set_point),
-    'loop4setpoint': lambda cryo: float_attr(cryo[4].set_point),
+    'channela': lambda cryo: cryo['A'].temperature,
+    'channelb': lambda cryo: cryo['B'].temperature,
+    'channelc': lambda cryo: cryo['C'].temperature,
+    'channeld': lambda cryo: cryo['D'].temperature,
+    'loop1output': lambda cryo: cryo[1].output_power,
+    'loop2output': lambda cryo: cryo[2].output_power,
+    'loop3output': lambda cryo: cryo[3].output_power,
+    'loop4output': lambda cryo: cryo[4].output_power,
+    'loop1range': lambda cryo: cryo[1].range,
+    'loop1rate': lambda cryo: cryo[1].rate,
+    'loop2rate': lambda cryo: cryo[2].rate,
+    'loop3rate': lambda cryo: cryo[3].rate,
+    'loop4rate': lambda cryo: cryo[4].rate,
+    'loop1setpoint': lambda cryo: cryo[1].set_point,
+    'loop2setpoint': lambda cryo: cryo[2].set_point,
+    'loop3setpoint': lambda cryo: cryo[3].set_point,
+    'loop4setpoint': lambda cryo: cryo[4].set_point,
 }
 
 
@@ -96,23 +98,23 @@ class CryoConTempController(Device):
 
     @attribute
     def channelA(self):
-        return self.last_values['channela']
+        return float_attr(self.last_values['channela'])
 
     @attribute
     def channelB(self):
-        return self.last_values['channelb']
+        return float_attr(self.last_values['channelb'])
 
     @attribute
     def channelC(self):
-        return self.last_values['channelc']
+        return float_attr(self.last_values['channelc'])
 
     @attribute
     def channelD(self):
-        return self.last_values['channeld']
+        return float_attr(self.last_values['channeld'])
 
     @attribute
     def loop1output(self):
-        return self.last_values['loop1output']
+        return float_attr(self.last_values['loop1output'])
 
     @loop1output.setter
     def loop1output(self, power):
@@ -120,7 +122,7 @@ class CryoConTempController(Device):
 
     @attribute(unit='%')
     def loop2output(self):
-        return self.last_values['loop2output']
+        return float_attr(self.last_values['loop2output'])
 
     @loop2output.setter
     def loop2output(self, power):
@@ -128,7 +130,7 @@ class CryoConTempController(Device):
 
     @attribute(unit='%')
     def loop3output(self):
-        return self.last_values['loop3output']
+        return float_attr(self.last_values['loop3output'])
 
     @loop3output.setter
     def loop3output(self, power):
@@ -136,7 +138,7 @@ class CryoConTempController(Device):
 
     @attribute(unit='%')
     def loop4output(self):
-        return self.last_values['loop4output']
+        return float_attr(self.last_values['loop4output'])
 
     @loop4output.setter
     def loop4output(self, power):
@@ -152,7 +154,7 @@ class CryoConTempController(Device):
 
     @attribute
     def loop1rate(self):
-        return self.last_values['loop1rate']
+        return float_attr(self.last_values['loop1rate'])
 
     @loop1rate.setter
     def loop1rate(self, rate):
@@ -160,7 +162,7 @@ class CryoConTempController(Device):
 
     @attribute
     def loop2rate(self):
-        return self.last_values['loop2rate']
+        return float_attr(self.last_values['loop2rate'])
 
     @loop2rate.setter
     def loop2rate(self, rate):
@@ -168,7 +170,7 @@ class CryoConTempController(Device):
 
     @attribute
     def loop3rate(self):
-        return self.last_values['loop3rate']
+        return float_attr(self.last_values['loop3rate'])
 
     @loop3rate.setter
     def loop3rate(self, rate):
@@ -176,7 +178,7 @@ class CryoConTempController(Device):
 
     @attribute
     def loop4rate(self):
-        return self.last_values['loop4rate']
+        return float_attr(self.last_values['loop4rate'])
 
     @loop4rate.setter
     def loop4rate(self, rate):
@@ -184,7 +186,7 @@ class CryoConTempController(Device):
 
     @attribute
     def loop1setpoint(self):
-        return self.last_values['loop1setpoint']
+        return float_attr(self.last_values['loop1setpoint'])
 
     @loop1setpoint.setter
     def loop1setpoint(self, set_point):
@@ -192,7 +194,7 @@ class CryoConTempController(Device):
 
     @attribute
     def loop2setpoint(self):
-        return self.last_values['loop2setpoint']
+        return float_attr(self.last_values['loop2setpoint'])
 
     @loop2setpoint.setter
     def loop2setpoint(self, set_point):
@@ -200,7 +202,7 @@ class CryoConTempController(Device):
 
     @attribute
     def loop3setpoint(self):
-        return self.last_values['loop3setpoint']
+        return float_attr(self.last_values['loop3setpoint'])
 
     @loop3setpoint.setter
     def loop3setpoint(self, set_point):
@@ -208,7 +210,7 @@ class CryoConTempController(Device):
 
     @attribute
     def loop4setpoint(self):
-        return self.last_values['loop4setpoint']
+        return float_attr(self.last_values['loop4setpoint'])
 
     @loop4setpoint.setter
     def loop4setpoint(self, set_point):
