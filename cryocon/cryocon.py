@@ -82,7 +82,7 @@ class Channel:
 class Loop:
 
     source = loop_property('source')
-    type = loop_property('type')
+    type = loop_property('typ')
     rate = loop_property('rate', to_float)
     set_point = loop_property('setpt', to_float_unit)
 

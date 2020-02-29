@@ -41,6 +41,10 @@ ATTR_MAP = {
     'loop2rate': lambda cryo: cryo[2].rate,
     'loop3rate': lambda cryo: cryo[3].rate,
     'loop4rate': lambda cryo: cryo[4].rate,
+    'loop1type': lambda cryo: cryo[1].type,
+    'loop2type': lambda cryo: cryo[2].type,
+    'loop3type': lambda cryo: cryo[3].type,
+    'loop4type': lambda cryo: cryo[4].type,
     'loop1setpoint': lambda cryo: cryo[1].set_point,
     'loop2setpoint': lambda cryo: cryo[2].set_point,
     'loop3setpoint': lambda cryo: cryo[3].set_point,
@@ -74,7 +78,7 @@ class CryoConTempController(Device):
         multi_attr = self.get_device_attr()
         names = []
         with self.cryocon as group:
-            for index in indexes:
+            for index in sorted(indexes):
                 attr = multi_attr.get_attr_by_ind(index)
                 attr_name = attr.get_name().lower()
                 func = ATTR_MAP[attr_name]
@@ -183,6 +187,38 @@ class CryoConTempController(Device):
     @loop4rate.setter
     def loop4rate(self, rate):
         self.cryocon[4].rate = rate
+
+    @attribute(dtype=str)
+    def loop1type(self):
+        return self.last_values['loop1type']
+
+    @loop1type.setter
+    def loop1type(self, type):
+        self.cryocon[1].type = type
+
+    @attribute(dtype=str)
+    def loop2type(self):
+        return self.last_values['loop2type']
+
+    @loop2type.setter
+    def loop2type(self, type):
+        self.cryocon[2].type = type
+
+    @attribute(dtype=str)
+    def loop3type(self):
+        return self.last_values['loop3type']
+
+    @loop3type.setter
+    def loop3type(self, type):
+        self.cryocon[3].type = type
+
+    @attribute(dtype=str)
+    def loop4type(self):
+        return self.last_values['loop4type']
+
+    @loop4type.setter
+    def loop4type(self, type):
+        self.cryocon[4].type = type
 
     @attribute
     def loop1setpoint(self):
