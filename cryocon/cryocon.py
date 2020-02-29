@@ -189,6 +189,18 @@ class CryoCon:
         return self._query(':*IDN?')
 
     @property
+    def name(self):
+        return self._query(':SYSTEM:NAME?')
+
+    @property
+    def hw_revision(self):
+        return self._query(':SYSTEM:HWR?')
+
+    @property
+    def fw_revision(self):
+        return self._query(':SYSTEM:FWR?')
+
+    @property
     def control(self):
         return self._query(':CONTROL?', to_on_off)
 
