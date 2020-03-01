@@ -6,6 +6,7 @@ import sockio.sio
 
 OUT_OF_RANGE = '_______'
 OUT_OF_LIMIT = '.......'
+NA = 'N/A'
 DISABLED = ''
 UNITS = ('K', 'C', 'F', 'S')
 NAK = 'NAK'
@@ -19,8 +20,14 @@ TYPES = ['OFF', 'PID', 'MAN', 'TABLE', 'RAMPP', 'RAMPT']
 RANGES = ['HI', 'MID', 'LOW']
 
 
+def to_int(text):
+    if text in (OUT_OF_LIMIT, OUT_OF_RANGE, NA):
+        return None
+    return int(text)
+
+
 def to_float(text):
-    if text in (OUT_OF_LIMIT, OUT_OF_RANGE):
+    if text in (OUT_OF_LIMIT, OUT_OF_RANGE, NA):
         return None
     return float(text)
 
@@ -85,6 +92,18 @@ class Loop:
     type = loop_property('typ')
     rate = loop_property('rate', to_float)
     set_point = loop_property('setpt', to_float_unit)
+    p_gain = loop_property('pga', to_float)
+    i_gain = loop_property('iga', to_float)
+    d_gain = loop_property('dga', to_float)
+    manual_output_power = loop_property('pman', to_float)
+    load = loop_property('load', to_int)
+    max_output_power = loop_property('maxp', to_float)
+    max_set_point = loop_property('maxs', to_float_unit)
+    output_voltage = loop_property('vsen', to_float_unit, None) # in V
+    output_current = loop_property('isen', to_float_unit, None) # in A
+    output_load_resistance = loop_property('lsen', to_float, None)
+    temperature = loop_property('htrh', to_float_unit, None) # in degC
+    autotune_status = loop_property('aut:stat', str, None)
 
     def __init__(self, nb, ctrl):
         self.id = nb
