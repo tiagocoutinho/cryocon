@@ -133,16 +133,20 @@ class CryoCon:
 
         def __init__(self, ctrl):
             self.ctrl = ctrl
-            self.cmds = []
+            self.cmds = ['']
             self.funcs = []
 
         def append(self, cmd, func):
-            self.cmds.append(cmd)
+            cmds = self.cmds[-1]
+            ## maximum of 255 characters per command
+            if len(cmds) + len(cmd) > 250:
+                cmds = ''
+                self.cmds.append(cmds)
+            self.cmds[-1] += ';{}'.format(cmd)
             self.funcs.append(func)
 
         def query(self):
-            request = ';'.join(self.cmds)
-            reply = self.ctrl._ask(request)
+            reply = ';'.join([self.ctrl._ask(request) for request in self.cmds])
             replies = (msg.strip() for msg in reply.split(';'))
             replies = [func(text) for func, text in zip(self.funcs, replies)]
             self.replies = replies
