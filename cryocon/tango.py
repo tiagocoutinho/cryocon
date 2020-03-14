@@ -1,3 +1,4 @@
+import math
 import time
 
 from tango import DevState, AttrQuality
@@ -22,8 +23,9 @@ def create_device(address, channels, loops):
 
 
 def float_attr(value):
-    if value is None:
-        return float('nan'), time.time(), AttrQuality.ATTR_INVALID
+    if math.isnan(value):
+        return value, time.time(), AttrQuality.ATTR_INVALID
+
     return value
 
 
