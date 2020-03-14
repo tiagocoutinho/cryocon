@@ -49,6 +49,18 @@ ATTR_MAP = {
     'loop2setpoint': lambda cryo: cryo[2].set_point,
     'loop3setpoint': lambda cryo: cryo[3].set_point,
     'loop4setpoint': lambda cryo: cryo[4].set_point,
+    'loop1pgain': lambda cryo: cryo[1].p_gain,
+    'loop2pgain': lambda cryo: cryo[2].p_gain,
+    'loop3pgain': lambda cryo: cryo[3].p_gain,
+    'loop4pgain': lambda cryo: cryo[4].p_gain,
+    'loop1igain': lambda cryo: cryo[1].i_gain,
+    'loop2igain': lambda cryo: cryo[2].i_gain,
+    'loop3igain': lambda cryo: cryo[3].i_gain,
+    'loop4igain': lambda cryo: cryo[4].i_gain,
+    'loop1dgain': lambda cryo: cryo[1].d_gain,
+    'loop2dgain': lambda cryo: cryo[2].d_gain,
+    'loop3dgain': lambda cryo: cryo[3].d_gain,
+    'loop4dgain': lambda cryo: cryo[4].d_gain,
 }
 
 
