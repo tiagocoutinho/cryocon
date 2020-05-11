@@ -5,7 +5,7 @@
 import sys
 from setuptools import setup, find_packages
 
-requirements = ['sockio', 'PyTango']
+requirements = ['sockio>=0.8']
 
 
 setup(
@@ -15,9 +15,12 @@ setup(
     version='1.0.0',
     description="CryCon library",
     long_description="CryoCon library",
+    extras_require={
+        'tango-ds': ['PyTango'],
+    },
     entry_points={
         'console_scripts': [
-            'CryoConTempController = cryocon.tango:main',
+            'CryoConTempController = cryocon.tango:main [tango-ds]',
         ]
     },
     classifiers=[
