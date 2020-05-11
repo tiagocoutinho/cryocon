@@ -187,8 +187,9 @@ class CryoCon:
         return self.group
 
     def __exit__(self, exc_type, exc_value, traceback):
-        self.group.query()
+        group = self.group
         self.group = None
+        group.query()
 
     def _ask(self, cmd):
         cmd += '\n'
