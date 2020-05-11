@@ -1,3 +1,4 @@
+import time
 import logging
 import functools
 
@@ -145,6 +146,8 @@ class Loop:
 
 class CryoCon:
 
+    comm_error_retry_period = 3
+
     class Group:
 
         def __init__(self, ctrl):
@@ -190,11 +193,23 @@ class CryoCon:
         group.query()
 
     def _ask(self, cmd):
-        cmd += '\n'
-        logging.info('REQ: %r', cmd)
-        reply = self._conn.write_readline(cmd.encode()).strip().decode()
-        logging.info('REP: %r', reply)
-        return reply
+        now = time.time()
+        last_err, last_ts = self._last_comm_error
+        if now < (last_ts + self.comm_error_retry_period):
+            raise last_err
+        try:
+            cmd += '\n'
+            logging.info('REQ: %r', cmd)
+            reply = self._conn.write_readline(cmd.encode()).strip().decode()
+            logging.info('REP: %r', reply)
+            self._last_comm_error = None, 0
+            return reply
+        except OSError as comm_error:
+            self._last_comm_error = comm_error, time.time()
+            raise
+        except Exception:
+            self._last_comm_error = None, 0
+            raise
 
     def _query(self, cmd, func=lambda x: x):
         if self.group is None:

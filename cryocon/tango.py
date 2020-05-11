@@ -1,5 +1,5 @@
-import math
 import time
+import logging
 
 from tango import DevState, AttrQuality
 from tango.server import Device, attribute, command, device_property
@@ -22,15 +22,24 @@ def create_connection(address, connection_timeout=0.2, timeout=0.2):
             'address {!r} not supported'.format(address))
 
 
-def float_attr(value):
-    if math.isnan(value):
-        return value, time.time(), AttrQuality.ATTR_INVALID
-
-    return value
+def attr(**kwargs):
+    name = kwargs['name'].lower()
+    dtype = kwargs.setdefault('dtype', float)
+    def get(self):
+        value = self.last_values[name]
+        if isinstance(value, Exception):
+            raise value
+        value = self.last_values[name]
+        if value is None:
+            value = float('nan') if dtype == float else ''
+            return value, time.time(), AttrQuality.ATTR_INVALID
+        return value
+    return attribute(get, **kwargs)
 
 
 ATTR_MAP = {
     'idn': lambda cryo: cryo.idn,
+    'control': lambda cryo: cryo.control,
     'channela': lambda cryo: cryo['A'].temperature,
     'channelb': lambda cryo: cryo['B'].temperature,
     'channelc': lambda cryo: cryo['C'].temperature,
@@ -85,6 +94,7 @@ class CryoConTempController(Device):
         conn = create_connection(self.address)
         self.cryocon = CryoCon(conn, channels=channels, loops=loops)
         self.last_values = {}
+        self.last_state_ts = 0
 
     def delete_device(self):
         super().delete_device()
@@ -95,181 +105,138 @@ class CryoConTempController(Device):
 
     def read_attr_hardware(self, indexes):
         multi_attr = self.get_device_attr()
-        names = []
+        names = ['control']
         with self.cryocon as group:
+            self.cryocon.control
             for index in sorted(indexes):
                 attr = multi_attr.get_attr_by_ind(index)
                 attr_name = attr.get_name().lower()
                 func = ATTR_MAP[attr_name]
                 func(self.cryocon)
                 names.append(attr_name)
+        values = group.replies
+        self.last_values = dict(zip(names, values))
+        self._update_state_status(self.last_values['control'])
 
-        self.last_values = dict(zip(names, group.replies))
+    def _update_state_status(self, value=None):
+        if value is None:
+            ts = time.time()
+            if ts < (self.last_state_ts + 1):
+                return self.get_state(), self.get_status()
+            try:
+                value = self.cryocon.control
+            except Exception as error:
+                value = error
+        ts = time.time()
+        if isinstance(value, Exception):
+            state, status = DevState.FAULT, 'Error: {!r}'.format(value)
+        else:
+            state = DevState.ON if value else DevState.OFF
+            status = 'Control is {}'.format('On' if value else 'Off')
+        self.set_state(state)
+        self.set_status(status)
+        self.last_state_ts = ts
+        self.__local_status = status # prevent deallocation by keeping reference
+        return state, status
 
     def dev_state(self):
-        try:
-            return DevState.ON if self.cryocon.control else DevState.OFF
-        except:
-            return DevState.FAULT
+        state, status = self._update_state_status()
+        return state
 
     def dev_status(self):
-        try:
-            return 'Connected. Control is {}'.format(
-                'On' if self.cryocon.control else 'Off')
-        except Exception as err:
-            return 'Error: {!r}'.format(err)
+        state, status = self._update_state_status()
+        return status
 
     @attribute(dtype=str)
     def idn(self):
         return self.last_values['idn']
 
-    @attribute
-    def channelA(self):
-        return float_attr(self.last_values['channela'])
-
-    @attribute
-    def channelB(self):
-        return float_attr(self.last_values['channelb'])
-
-    @attribute
-    def channelC(self):
-        return float_attr(self.last_values['channelc'])
-
-    @attribute
-    def channelD(self):
-        return float_attr(self.last_values['channeld'])
-
-    @attribute
-    def loop1output(self):
-        return float_attr(self.last_values['loop1output'])
+    idn = attr(name='idn', dtype=str)
+    channelA = attr(name='channelA')
+    channelB = attr(name='channelB')
+    channelC = attr(name='channelC')
+    channelD = attr(name='channelD')
+    loop1output = attr(name='loop1output')
+    loop2output = attr(name='loop2output')
+    loop3output = attr(name='loop3output')
+    loop4output = attr(name='loop4output')
+    loop1range = attr(name='loop1range')
+    loop1rate = attr(name='loop1rate')
+    loop2rate = attr(name='loop2rate')
+    loop3rate = attr(name='loop3rate')
+    loop4rate = attr(name='loop4rate')
+    loop1type = attr(name='loop1type', dtype=str)
+    loop2type = attr(name='loop2type', dtype=str)
+    loop3type = attr(name='loop3type', dtype=str)
+    loop4type = attr(name='loop4type', dtype=str)
+    loop1setpoint = attr(name='loop1setpoint')
+    loop2setpoint = attr(name='loop2setpoint')
+    loop3setpoint = attr(name='loop3setpoint')
+    loop4setpoint = attr(name='loop4setpoint')
 
     @loop1output.setter
     def loop1output(self, power):
         self.cryocon[1].output_power = power
 
-    @attribute(unit='%')
-    def loop2output(self):
-        return float_attr(self.last_values['loop2output'])
-
     @loop2output.setter
     def loop2output(self, power):
         self.cryocon[2].output_power = power
-
-    @attribute(unit='%')
-    def loop3output(self):
-        return float_attr(self.last_values['loop3output'])
 
     @loop3output.setter
     def loop3output(self, power):
         self.cryocon[3].output_power = power
 
-    @attribute(unit='%')
-    def loop4output(self):
-        return float_attr(self.last_values['loop4output'])
-
     @loop4output.setter
     def loop4output(self, power):
         self.cryocon[4].output_power = power
-
-    @attribute(dtype=str)
-    def loop1range(self):
-        return self.last_values['loop1range']
 
     @loop1range.setter
     def loop1range(self, range):
         self.cryocon[1].range = range
 
-    @attribute
-    def loop1rate(self):
-        return float_attr(self.last_values['loop1rate'])
-
     @loop1rate.setter
     def loop1rate(self, rate):
         self.cryocon[1].rate = rate
-
-    @attribute
-    def loop2rate(self):
-        return float_attr(self.last_values['loop2rate'])
 
     @loop2rate.setter
     def loop2rate(self, rate):
         self.cryocon[2].rate = rate
 
-    @attribute
-    def loop3rate(self):
-        return float_attr(self.last_values['loop3rate'])
-
     @loop3rate.setter
     def loop3rate(self, rate):
         self.cryocon[3].rate = rate
-
-    @attribute
-    def loop4rate(self):
-        return float_attr(self.last_values['loop4rate'])
 
     @loop4rate.setter
     def loop4rate(self, rate):
         self.cryocon[4].rate = rate
 
-    @attribute(dtype=str)
-    def loop1type(self):
-        return self.last_values['loop1type']
-
     @loop1type.setter
     def loop1type(self, type):
         self.cryocon[1].type = type
-
-    @attribute(dtype=str)
-    def loop2type(self):
-        return self.last_values['loop2type']
 
     @loop2type.setter
     def loop2type(self, type):
         self.cryocon[2].type = type
 
-    @attribute(dtype=str)
-    def loop3type(self):
-        return self.last_values['loop3type']
-
     @loop3type.setter
     def loop3type(self, type):
         self.cryocon[3].type = type
-
-    @attribute(dtype=str)
-    def loop4type(self):
-        return self.last_values['loop4type']
 
     @loop4type.setter
     def loop4type(self, type):
         self.cryocon[4].type = type
 
-    @attribute
-    def loop1setpoint(self):
-        return float_attr(self.last_values['loop1setpoint'])
-
     @loop1setpoint.setter
     def loop1setpoint(self, set_point):
         self.cryocon[1].set_point = set_point
-
-    @attribute
-    def loop2setpoint(self):
-        return float_attr(self.last_values['loop2setpoint'])
 
     @loop2setpoint.setter
     def loop2setpoint(self, set_point):
         self.cryocon[2].set_point = set_point
 
-    @attribute
-    def loop3setpoint(self):
-        return float_attr(self.last_values['loop3setpoint'])
-
     @loop3setpoint.setter
     def loop3setpoint(self, set_point):
         self.cryocon[3].set_point = set_point
-
-    @attribute
-    def loop4setpoint(self):
-        return float_attr(self.last_values['loop4setpoint'])
 
     @loop4setpoint.setter
     def loop4setpoint(self, set_point):
@@ -293,6 +260,9 @@ class CryoConTempController(Device):
 
 
 def main():
+    import logging
+    fmt = '%(asctime)s %(levelname)s %(threadName)s %(message)s'
+    logging.basicConfig(level='INFO', format=fmt)
     CryoConTempController.run_server()
 
 
