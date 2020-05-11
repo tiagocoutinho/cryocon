@@ -88,7 +88,10 @@ class CryoConTempController(Device):
 
     def delete_device(self):
         super().delete_device()
-        self.cryocon._conn.close()
+        try:
+            self.cryocon._conn.close()
+        except Exception:
+            logging.exception('Error closing cryocon')
 
     def read_attr_hardware(self, indexes):
         multi_attr = self.get_device_attr()
