@@ -4,19 +4,19 @@ import time
 from tango import DevState, AttrQuality
 from tango.server import Device, attribute, command, device_property
 
+from sockio.sio import TCP
+
 from .cryocon import CryoCon
 
 
-def create_device(address, channels, loops):
+def create_connection(address, connection_timeout=0.2, timeout=0.2):
     if address.startswith('tcp://'):
         address = address[6:]
         pars = address.split(':')
         host = pars[0]
-        if len(pars) > 1:
-            port = int(pars[1])
-        else:
-            port = 5000
-        return CryoCon(host, port, channels=channels, loops=loops)
+        port = int(pars[1]) if len(pars) else 5000
+        conn = TCP(host, port, connection_timeout=connection_timeout, timeout=timeout)
+        return conn
     else:
         raise NotImplementedError(
             'address {!r} not supported'.format(address))
@@ -82,7 +82,8 @@ class CryoConTempController(Device):
         channels = ''.join(self.UsedChannels)
         loops = self.UsedLoops
 
-        self.cryocon = create_device(self.address, channels, loops)
+        conn = create_connection(self.address)
+        self.cryocon = CryoCon(conn, channels=channels, loops=loops)
         self.last_values = {}
 
     def delete_device(self):

@@ -1,9 +1,6 @@
 import logging
 import functools
 
-import sockio.sio
-
-
 OUT_OF_RANGE = '_______'
 OUT_OF_LIMIT = '.......'
 NA = 'N/A'
@@ -170,8 +167,9 @@ class CryoCon:
             replies = [func(text) for func, text in zip(self.funcs, replies)]
             self.replies = replies
 
-    def __init__(self, host, port=5000, channels='ABCD', loops=(1,2,3,4)):
-        self._conn = sockio.sio.TCP(host, port)
+    def __init__(self, conn, channels='ABCD', loops=(1,2,3,4)):
+        self._conn = conn
+        self._last_comm_error = None, 0  # (error, timestamp)
         self.channels = {channel:Channel(channel, self) for channel in channels}
         self.loops = {loop:Loop(loop, self) for loop in loops}
         self.group = None
