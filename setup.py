@@ -17,6 +17,7 @@ setup(
     long_description="CryoCon library",
     extras_require={
         'tango-ds': ['PyTango'],
+        'simulator': ['sinstruments', 'scpi-protocol>=0.2']
     },
     entry_points={
         'console_scripts': [
