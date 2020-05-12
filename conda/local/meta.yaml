@@ -20,16 +20,16 @@ requirements:
     - pip
     - pytango >=9.2.5
     - python >=3.5
-    - sockio >= 0.6
+    - sockio >=0.8.1
   run:
     - pip
     - pytango >=9.2.5
     - python >=3.5
-    - sockio >= 0.6
+    - sockio >=0.8.1
 
 test:
   imports:
-    - import cryocon
+    - cryocon
 
 about:
   home: "http://www.github.com/tiagocoutinho/cryocon"
