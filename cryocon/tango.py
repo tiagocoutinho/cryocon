@@ -262,7 +262,7 @@ class CryoConTempController(Device):
 def main():
     import logging
     fmt = '%(asctime)s %(levelname)s %(threadName)s %(message)s'
-    logging.basicConfig(level='INFO', format=fmt)
+    logging.basicConfig(level=logging.WARNING, format=fmt)
     CryoConTempController.run_server()
 
 
