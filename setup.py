@@ -12,7 +12,7 @@ setup(
     name='cryocon',
     author="Jairo Moldes",
     author_email='jmoldes@cells.es',
-    version='1.0.0',
+    version='1.1.0',
     description="CryCon library",
     long_description="CryoCon library",
     extras_require={
