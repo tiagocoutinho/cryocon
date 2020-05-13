@@ -1,7 +1,10 @@
 import time
+import asyncio
 import logging
 import datetime
 import functools
+import contextlib
+
 
 OUT_OF_RANGE = '_______'
 OUT_OF_LIMIT = '.......'
@@ -53,6 +56,15 @@ def to_time(text):
     return datetime.time(hh, mm, ss)
 
 
+def handle_reply(reply):
+    if reply is None:
+        return
+    reply = reply.decode().strip()
+    if reply is NACK:
+        raise CryoConError('Command not acknowledged')
+    return reply
+
+
 class CryoConError(Exception):
     pass
 
@@ -99,7 +111,6 @@ class Channel:
 
     def clear_alarm(self):
         self.ctrl._command(':INPUT A:ALAR:CLE')
-
 
 
 class Loop:
@@ -186,14 +197,24 @@ class CryoCon:
             self.cmds[-1] = cmds
             self.funcs.append(func)
 
-        def query(self):
-            reply = ';'.join([self.ctrl._ask(request) for request in self.cmds])
-            replies = (msg.strip() for msg in reply.split(';'))
+        def _store(self, replies):
+            replies = ';'.join(replies)
+            replies = (msg.strip() for msg in replies.split(';'))
             replies = [func(text) for func, text in zip(self.funcs, replies)]
             self.replies = replies
 
+        async def _async_store(self, replies):
+            self._store([await reply for reply in replies])
+
+        def query(self):
+            replies = [self.ctrl._ask(request) for request in self.cmds]
+            is_async = replies and asyncio.iscoroutine(replies[0])
+            store = self._async_store if is_async else self._store
+            return store(replies)
+
     def __init__(self, conn, channels='ABCD', loops=(1,2,3,4)):
         self._conn = conn
+        self._log = logging.getLogger("CryoCon({}:{})".format(conn.host, conn.port))
         self._last_comm_error = None, 0  # (error, timestamp)
         self.channels = {channel:Channel(channel, self) for channel in channels}
         self.loops = {loop:Loop(loop, self) for loop in loops}
@@ -214,42 +235,64 @@ class CryoCon:
         self.group = None
         group.query()
 
+    async def __aenter__(self):
+        self.group = self.Group(self)
+        return self.group
+
+    async def __aexit__(self, exc_type, exc_value, traceback):
+        group = self.group
+        self.group = None
+        await group.query()
+
+    @contextlib.contextmanager
+    def _guard_io(self):
+        self._last_comm_error = None, 0
+        try:
+            yield
+        except OSError as comm_error:
+            self._last_comm_error = comm_error, time.time()
+            raise
+
+    async def _async_io(self, func, request):
+        self._log.debug("REQ: %r", request)
+        with self._guard_io():
+            reply = handle_reply(await func(request))
+        self._log.debug("REP: %r", reply)
+        return reply
+
+    def _sync_io(self, func, request):
+        self._log.debug("REQ: %r", request)
+        with self._guard_io():
+            reply = handle_reply(func(request))
+        self._log.debug("REP: %r", reply)
+        return reply
+
     def _ask(self, cmd):
         now = time.time()
         last_err, last_ts = self._last_comm_error
         if now < (last_ts + self.comm_error_retry_period):
             raise last_err
         query = cmd.endswith('?')
-        try:
-            cmd += '\n'
-            cmd_raw = cmd.encode()
-            reply = None
-            logging.info('REQ: %r', cmd)
-            if query:
-                reply = self._conn.write_readline(cmd_raw).strip().decode()
-                logging.info('REP: %r', reply)
-                if reply == NACK:
-                    raise CryoConError('Command {!r} not acknowledged'.format(cmd))
-            else:
-                self._conn.write(cmd_raw)
-            self._last_comm_error = None, 0
-            return reply
-        except OSError as comm_error:
-            self._last_comm_error = comm_error, time.time()
-            raise
-        except Exception:
-            self._last_comm_error = None, 0
-            raise
+        raw_cmd =  cmd.encode() + b'\n'
+        io = self._conn.write_readline if query else self._conn.write
+        handle = self._async_io if asyncio.iscoroutinefunction(io) else self._sync_io
+        return handle(io, raw_cmd)
 
     def _query(self, cmd, func=lambda x: x):
         if self.group is None:
-            return func(self._ask(cmd))
+            reply = self._ask(cmd)
+            if asyncio.iscoroutine(reply):
+                async def async_func(reply):
+                    return func(await reply)
+                reply = async_func(reply)
+            else:
+                reply = func(reply)
+            return reply
         else:
             self.group.append(cmd, func)
 
     def _command(self, cmd):
-        reply = self._ask(cmd)
-        assert not reply
+        return self._ask(cmd)
 
     @property
     def idn(self):
