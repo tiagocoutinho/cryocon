@@ -55,6 +55,21 @@ from sinstruments.simulator import BaseDevice
 
 DEFAULT_CHANNEL = {
     'unit': 'K',
+    'slope': '1.0',
+    'variance': '0.0',
+    'alarm': '--',
+    'alarm_highest': '105',
+    'alarm_lowest': '5',
+    'alarm_deadband': '0.1',
+    'alarm_high_enabled': 'NO',
+    'alarm_low_enabled': 'NO',
+    'alarm_latch_enabled': 'NO',
+    'alarm_audio': 'NO',
+    'minimum': '3.4',
+    'maximum': '304.12',
+    'variance': '0.1',
+    'slope': '0.5',
+    'offset': '5.5',
 }
 
 def Channel(**data):
@@ -80,6 +95,7 @@ def Loop(**data):
 
 DEFAULT = {
     '*idn': 'Cryo-con,24C,204683,1.01A',
+    'name': 'Cryocon simulator',
     'lockout': 'OFF',
     'distc': 1,
     'remled': 'OFF',
@@ -108,6 +124,9 @@ class CryoCon(BaseDevice):
             '*IDN': scpi.Cmd(get=lambda req: self._config['*idn']),
             'SYSTem:LOCKout': scpi.Cmd(get=self.lockout, set=self.lockout),
             'SYSTem:REMLed': scpi.Cmd(get=self.remled, set=self.remled),
+            'SYSTem:NAMe': scpi.Cmd(get=self.sys_name, set=self.sys_name),
+            'SYSTem:DATe': scpi.Cmd(get=self.sys_date, set=self.sys_date),
+            'SYSTem:TIMe': scpi.Cmd(get=self.sys_time, set=self.sys_time),
             'CONTrol': scpi.Cmd(get=self.control, set=self.control),
             'STOP': scpi.Cmd(set=self.stop),
             'INPut': scpi.Cmd(get=self.get_input, set=self.set_input),
@@ -169,6 +188,21 @@ class CryoCon(BaseDevice):
     def stop(self, request):
         self._config['control'] = 'OFF'
 
+    def sys_name(self, request):
+        if request.query:
+            return self._config['name']
+        self._config['name'] = request.args.replace('"', '')
+
+    def sys_date(self, request):
+        if request.query:
+            return time.strftime('"%m/%d/%Y"')
+        # cannot change machine date!
+
+    def sys_time(self, request):
+        if request.query:
+            return time.strftime('"%H:%M:%S"')
+        # cannot change machine time!
+
     def get_input(self, request):
         if ':' in request.args:
             channels, variable = request.args.split(':', 1)
@@ -183,9 +217,21 @@ class CryoCon(BaseDevice):
             ch = self._config['channels']
             values = [ch[channel]['unit'] for channel in channels]
             return ';'.join(values)
-        elif variable.startswith('NAME'):
+        elif variable.startswith('NAM'):
             ch = self._config['channels']
             values = [ch[channel]['name'] for channel in channels]
+            return ';'.join(values)
+        elif variable.startswith('SLOP'):
+            ch = self._config['channels']
+            values = [ch[channel]['slope'] for channel in channels]
+            return ';'.join(values)
+        elif variable.startswith('VARI'):
+            ch = self._config['channels']
+            values = [ch[channel]['variance'] for channel in channels]
+            return ';'.join(values)
+        elif variable.startswith('ALAR'):
+            ch = self._config['channels']
+            values = [ch[channel]['alarm'] for channel in channels]
             return ';'.join(values)
         else:
             return 'NACK'

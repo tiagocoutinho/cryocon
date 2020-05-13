@@ -1,5 +1,6 @@
 import time
 import logging
+import datetime
 import functools
 
 OUT_OF_RANGE = '_______'
@@ -42,6 +43,16 @@ def from_name(text):
     return '"{}"'.format(text)
 
 
+def to_date(text):
+    month, day, year = [int(i) for i in text.strip('"').split('/')]
+    return datetime.date(year, month, day)
+
+
+def to_time(text):
+    hh, mm, ss = [int(i) for i in text.strip('"').split(':')]
+    return datetime.time(hh, mm, ss)
+
+
 class CryoConError(Exception):
     pass
 
@@ -75,19 +86,27 @@ class Channel:
     name = channel_property('nam', fset=from_name)
     temperature = channel_property('temp', to_float)
     unit = channel_property('unit')
+    minimum = channel_property('min', to_float)
+    maximum = channel_property('max', to_float)
     variance = channel_property('vari', to_float)
     slope = channel_property('slop', to_float)
+    offset = channel_property('offs', to_float)
     alarm = channel_property('alar')
 
     def __init__(self, channel, ctrl):
         self.id = channel
         self.ctrl = ctrl
 
+    def clear_alarm(self):
+        self.ctrl._command(':INPUT A:ALAR:CLE')
+
+
 
 class Loop:
 
     source = loop_property('source')
     type = loop_property('typ')
+    error = loop_property('err')
     rate = loop_property('rate', to_float)
     set_point = loop_property('setpt', to_float_unit)
     p_gain = loop_property('pga', to_float)
@@ -240,6 +259,10 @@ class CryoCon:
     def name(self):
         return self._query(':SYSTEM:NAME?')
 
+    @name.setter
+    def name(self, name):
+        self._command(':SYSTEM:NAME "{}"'.format(name))
+
     @property
     def hw_revision(self):
         return self._query(':SYSTEM:HWR?')
@@ -283,3 +306,27 @@ class CryoCon:
     def display_filter_time(self, value):
         assert value in (0.5, 1, 2, 4, 8, 16, 32 or 64)
         self._command(':SYSTEM:DISTC {}'.format(value))
+
+    @property
+    def date(self):
+        return self._query(':SYSTEM:DATE?', to_date)
+
+    @date.setter
+    def date(self, date):
+        if isinstance(date, datetime.date):
+            date = date.strftime('"%m/%d/%Y"')
+        if not date.startswith('"'):
+            date = '"{}"'.format(date)
+        self._command(':SYSTEM:DATE {}'.format(date))
+
+    @property
+    def time(self):
+        return self._query(':SYSTEM:TIME?', to_time)
+
+    @time.setter
+    def time(self, time):
+        if isinstance(time, datetime.time):
+            time = time.strftime('"%H:%M:%S"')
+        if not time.startswith('"'):
+            time = '"{}"'.format(time)
+        self._command(':SYSTEM:TIME {}'.format(time))
