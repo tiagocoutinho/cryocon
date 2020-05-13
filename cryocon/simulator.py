@@ -135,16 +135,16 @@ class CryoCon(BaseDevice):
     def handle_request(self, request):
         cmd = self._cmds.get(request.name)
         if cmd is None:
-            return 'NAK'
+            return 'NACK'
         if request.query:
             getter = cmd.get('get')
             if getter is None:
-                return 'NAK'
+                return 'NACK'
             return cmd['get'](request)
         else:
             setter = cmd.get('set')
             if setter is None:
-                return 'NAK'
+                return 'NACK'
             return cmd['set'](request)
 
     def lockout(self, request):
@@ -188,7 +188,7 @@ class CryoCon(BaseDevice):
             values = [ch[channel]['name'] for channel in channels]
             return ';'.join(values)
         else:
-            return 'NAK'
+            return 'NACK'
 
     def set_input(self, request):
         arg, value = request.args.split(' ', 1)
@@ -201,7 +201,7 @@ class CryoCon(BaseDevice):
         elif variable.startswith('NAME'):
             channel['name'] = value
         else:
-            return 'NAK'
+            return 'NACK'
 
     def get_loop(self, request):
         channel, variable = request.args.split(':', 1)
@@ -221,7 +221,7 @@ class CryoCon(BaseDevice):
         elif variable.startswith('RANG'):
             return channel['range']
         else:
-            return 'NAK'
+            return 'NACK'
 
     def set_loop(self, request):
         arg, value = request.args.split(' ', 1)
@@ -242,4 +242,4 @@ class CryoCon(BaseDevice):
         elif variable.startswith('RANG'):
             channel['range'] = value
         else:
-            return 'NAK'
+            return 'NACK'

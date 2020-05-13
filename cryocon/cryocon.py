@@ -7,7 +7,7 @@ OUT_OF_LIMIT = '.......'
 NA = 'N/A'
 DISABLED = ''
 UNITS = ('K', 'C', 'F', 'S')
-NAK = 'NAK'
+NACK = 'NACK'
 
 #Delta read back tolerance
 DELTA_RB = 0.0000001 #6 decimals precision
@@ -161,7 +161,10 @@ class CryoCon:
             if len(cmds) + len(cmd) > 250:
                 cmds = ''
                 self.cmds.append(cmds)
-            self.cmds[-1] += ';{}'.format(cmd)
+            if self.cmds:
+                cmds += ';'
+            cmds += cmd
+            self.cmds[-1] = cmds
             self.funcs.append(func)
 
         def query(self):
@@ -197,11 +200,19 @@ class CryoCon:
         last_err, last_ts = self._last_comm_error
         if now < (last_ts + self.comm_error_retry_period):
             raise last_err
+        query = cmd.endswith('?')
         try:
             cmd += '\n'
+            cmd_raw = cmd.encode()
+            reply = None
             logging.info('REQ: %r', cmd)
-            reply = self._conn.write_readline(cmd.encode()).strip().decode()
-            logging.info('REP: %r', reply)
+            if query:
+                reply = self._conn.write_readline(cmd_raw).strip().decode()
+                logging.info('REP: %r', reply)
+                if reply == NACK:
+                    raise CryoConError('Command {!r} not acknowledged'.format(cmd))
+            else:
+                self._conn.write(cmd_raw)
             self._last_comm_error = None, 0
             return reply
         except OSError as comm_error:
