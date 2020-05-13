@@ -13,9 +13,9 @@ DISABLED = ''
 UNITS = ('K', 'C', 'F', 'S')
 NACK = 'NACK'
 
-#Delta read back tolerance
-DELTA_RB = 0.0000001 #6 decimals precision
-#setpoints seem to have some kind of preset values when not in K or S units
+# Delta read back tolerance
+DELTA_RB = 0.0000001  # 6 decimals precision
+# setpoints seem to have some kind of preset values when not in K or S units
 DELTA_RB_SETPT = 0.0001
 
 TYPES = ['OFF', 'PID', 'MAN', 'TABLE', 'RAMPP', 'RAMPT']
@@ -86,7 +86,7 @@ class _Property:
         if self.fset is None:
             raise AttributeError("can't set attribute")
         cmd = '{} {}'.format(self.cmd.format(obj.id), self.fset(value))
-        reply = obj.ctrl._command(cmd)
+        obj.ctrl._command(cmd)
 
 
 channel_property = functools.partial(_Property, 'INPUT')
@@ -127,10 +127,10 @@ class Loop:
     load = loop_property('load', to_int)
     max_output_power = loop_property('maxp', to_float)
     max_set_point = loop_property('maxs', to_float_unit)
-    output_voltage = loop_property('vsen', to_float_unit, None) # in V
-    output_current = loop_property('isen', to_float_unit, None) # in A
+    output_voltage = loop_property('vsen', to_float_unit, None)  # in V
+    output_current = loop_property('isen', to_float_unit, None)  # in A
     output_load_resistance = loop_property('lsen', to_float, None)
-    temperature = loop_property('htrh', to_float_unit, None) # in degC
+    temperature = loop_property('htrh', to_float_unit, None)  # in degC
     autotune_status = loop_property('aut:stat', str, None)
 
     def __init__(self, nb, ctrl):
@@ -187,7 +187,7 @@ class CryoCon:
 
         def append(self, cmd, func):
             cmds = self.cmds[-1]
-            ## maximum of 255 characters per command
+            # maximum of 255 characters per command
             if len(cmds) + len(cmd) > 250:
                 cmds = ''
                 self.cmds.append(cmds)
@@ -212,12 +212,12 @@ class CryoCon:
             store = self._async_store if is_async else self._store
             return store(replies)
 
-    def __init__(self, conn, channels='ABCD', loops=(1,2,3,4)):
+    def __init__(self, conn, channels='ABCD', loops=(1, 2, 3, 4)):
         self._conn = conn
         self._log = logging.getLogger("CryoCon({}:{})".format(conn.host, conn.port))
         self._last_comm_error = None, 0  # (error, timestamp)
-        self.channels = {channel:Channel(channel, self) for channel in channels}
-        self.loops = {loop:Loop(loop, self) for loop in loops}
+        self.channels = {channel: Channel(channel, self) for channel in channels}
+        self.loops = {loop: Loop(loop, self) for loop in loops}
         self.group = None
 
     def __getitem__(self, key):
@@ -273,7 +273,7 @@ class CryoCon:
         if now < (last_ts + self.comm_error_retry_period):
             raise last_err
         query = cmd.endswith('?')
-        raw_cmd =  cmd.encode() + b'\n'
+        raw_cmd = cmd.encode() + b'\n'
         io = self._conn.write_readline if query else self._conn.write
         handle = self._async_io if asyncio.iscoroutinefunction(io) else self._sync_io
         return handle(io, raw_cmd)
