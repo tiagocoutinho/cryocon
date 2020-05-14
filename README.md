@@ -201,6 +201,8 @@ $ CryoConTempController test
 
 ## TODO
 
-* Tango server:
-  * Add `on_connection_made` callback to initialize controller with:
-    * unit=`K`
+* Add `on_connection_made` callback to initialize controller with:
+  * unit=`K`
+  * cache IDN, fw revision, hw revision
+  * should we cache system:name? and input:name? in theory in could be modified
+    directly with the hardware front panel
