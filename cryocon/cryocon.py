@@ -337,3 +337,19 @@ class CryoCon:
             set_cmd = ':CONTROL' if value in (True, 'on', 'ON') else ':STOP'
             cmd = '{};{}'.format(set_cmd, cmd)
         return self._query(cmd, to_on_off)
+
+    def __repr__(self):
+        if self._is_async:
+            data = '(asynchonous)'
+        else:
+            items = 'idn', 'name', 'control', 'hw_revision', 'fw_revision'
+            try:
+                with self as group:
+                    for item in items:
+                        getattr(self, item)()
+                data = '\n'.join('{}: {}'.format(key.upper(), value)
+                                 for key, value in zip(items, group.replies))
+            except OSError:
+                data = '(disconnected)'
+
+        return 'CrycoCon({}:{})\n{}'.format(self._conn.host, self._conn.port, data)
