@@ -1,12 +1,15 @@
 # CryoCon library
 
-![CryoCon M24C](docs/cryocon_M24C.png)
+![CryoCon M24C](docs/cryocon_M24C_small.png)
 
 This library is used to control basic features of a CryoCon temperature
-controller. It is composed of a core library and optional simulator and
-[tango](https://tango-controls.org/) device server.
+controller. It is composed of a core library, an optional simulator and
+an optional [tango](https://tango-controls.org/) device server.
 
 It has been tested with M32 and M24C models, but should work with other models.
+
+It can be used with either the ETH or the serial line connection (read below
+on the recommended way to setup a serial line connection)
 
 ## Installation
 
@@ -31,8 +34,8 @@ consisting of two methods (either the sync or async version is supported):
 
   `async write(buff: bytes) -> None`
 
-A library that supports this is API is [sockio](https://pypi.org/project/sockio/)
-(cryocon comes pre-installed so you don't have to worry about  installing it).
+A library that supports this API is [sockio](https://pypi.org/project/sockio/)
+(cryocon comes pre-installed so you don't have to worry about installing it).
 
 This library includes both async and sync versions of the TCP object. It also
 supports a set of features like reconnection and timeout handling.
@@ -78,9 +81,25 @@ async def main():
 asyncio.run(main())
 ```
 
+#### Serial line
+
+To access a serial line based CryoCon device it is strongly recommended you spawn
+a serial to tcp bridge using [ser2net](https://linux.die.net/man/8/ser2net) or
+[socat](https://linux.die.net/man/1/socat)
+
+Assuming your device is connected to `/dev/ttyS0` and the baudrate is set to 19200,
+here is how you could use socat to expose your device on the machine port 5000:
+
+`socat -v TCP-LISTEN:5000,reuseaddr,fork file:/dev/ttyS0,rawer,b19200,cs8,eol=10,icanon=1`
+
+It might be worth considering starting socat or ser2net as a service using
+[supervisor](http://supervisord.org/) or [circus](https://circus.rtfd.io/).
+
 ### Simulator
 
-A CryoCon simulator is provided. Make sure everything is installed with:
+A CryoCon simulator is provided.
+
+Before using it, make sure everything is installed with:
 
 `$ pip install cryocon[simulator]`
 
@@ -91,7 +110,7 @@ how many devices you want to simulate and which properties they hold.
 
 The following example exports 2 hardware devices. The first is a minimal
 configuration using default values and the second defines some initial values
-explicitely:
+explicitly:
 
 ```yaml
 # config.yml
@@ -106,8 +125,8 @@ devices:
 - class: CryoCon
   package: cryocon.simulator
   transports:
-  - type: tcp
-    url: :5001
+  - type: serial
+    url: /tmp/cryocon
   *idn: Cryo-con,24C,11223344,1.02A
   channels:
   - id: A
