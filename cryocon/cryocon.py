@@ -107,7 +107,6 @@ def sub_member(prefix, name, fget=lambda x: x, fset=None):
             if fget is None:
                 raise ValueError('{} is not readable'.format(command))
             command += '?'
-            return obj.ctrl._query(command, fget)
         elif fset is None:
             raise ValueError('{} is not writable'.format(command))
         else:
@@ -115,7 +114,7 @@ def sub_member(prefix, name, fget=lambda x: x, fset=None):
             if fget is None:
                 return obj.ctrl._command(set_command)
             command = '{};{}?'.format(set_command, command)
-        return obj._query(command, fget)
+        return obj.ctrl._query(command, fget)
 
     return get_set
 

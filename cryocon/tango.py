@@ -108,7 +108,7 @@ class CryoConTempController(Device):
         multi_attr = self.get_device_attr()
         names = ['control']
         with self.cryocon as group:
-            self.cryocon.control
+            self.cryocon.control()
             for index in sorted(indexes):
                 attr = multi_attr.get_attr_by_ind(index)
                 attr_name = attr.get_name().lower()
@@ -125,7 +125,7 @@ class CryoConTempController(Device):
             if ts < (self.last_state_ts + 1):
                 return self.get_state(), self.get_status()
             try:
-                value = self.cryocon.control
+                value = self.cryocon.control()
             except Exception as error:
                 value = error
         ts = time.time()
