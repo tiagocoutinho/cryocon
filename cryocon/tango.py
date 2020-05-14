@@ -1,4 +1,5 @@
 import time
+import inspect
 import logging
 
 from tango import DevState, AttrQuality
@@ -24,6 +25,7 @@ def create_connection(address, connection_timeout=0.2, timeout=0.2):
 
 def attr(**kwargs):
     name = kwargs['name'].lower()
+    func = ATTR_MAP[name]
     dtype = kwargs.setdefault('dtype', float)
 
     def get(self):
@@ -35,33 +37,44 @@ def attr(**kwargs):
             value = float('nan') if dtype == float else ''
             return value, time.time(), AttrQuality.ATTR_INVALID
         return value
-    return attribute(get, **kwargs)
+
+    attr = attribute(get, **kwargs)
+
+    sig = inspect.signature(func)
+    if len(sig.parameters) > 1:
+        @attr.setter
+        def fset(self, value):
+            func(self.cryocon, value)
+        fset.__name__ = 'write_' + name
+        kwargs['fset'] = fset
+
+    return attr
 
 
 ATTR_MAP = {
     'idn': lambda cryo: cryo.idn(),
-    'control': lambda cryo: cryo.control(),
+    'control': lambda cryo, v=None: cryo.control(v),
     'channela': lambda cryo: cryo['A'].temperature(),
     'channelb': lambda cryo: cryo['B'].temperature(),
     'channelc': lambda cryo: cryo['C'].temperature(),
     'channeld': lambda cryo: cryo['D'].temperature(),
-    'loop1output': lambda cryo: cryo[1].output_power(),
-    'loop2output': lambda cryo: cryo[2].output_power(),
-    'loop3output': lambda cryo: cryo[3].output_power(),
-    'loop4output': lambda cryo: cryo[4].output_power(),
-    'loop1range': lambda cryo: cryo[1].range(),
-    'loop1rate': lambda cryo: cryo[1].rate(),
-    'loop2rate': lambda cryo: cryo[2].rate(),
-    'loop3rate': lambda cryo: cryo[3].rate(),
-    'loop4rate': lambda cryo: cryo[4].rate(),
-    'loop1type': lambda cryo: cryo[1].type(),
-    'loop2type': lambda cryo: cryo[2].type(),
-    'loop3type': lambda cryo: cryo[3].type(),
-    'loop4type': lambda cryo: cryo[4].type(),
-    'loop1setpoint': lambda cryo: cryo[1].set_point(),
-    'loop2setpoint': lambda cryo: cryo[2].set_point(),
-    'loop3setpoint': lambda cryo: cryo[3].set_point(),
-    'loop4setpoint': lambda cryo: cryo[4].set_point(),
+    'loop1output': lambda cryo, v=None: cryo[1].output_power(v),
+    'loop2output': lambda cryo, v=None: cryo[2].output_power(v),
+    'loop3output': lambda cryo, v=None: cryo[3].output_power(v),
+    'loop4output': lambda cryo, v=None: cryo[4].output_power(v),
+    'loop1range': lambda cryo, v=None: cryo[1].range(v),
+    'loop1rate': lambda cryo, v=None: cryo[1].rate(v),
+    'loop2rate': lambda cryo, v=None: cryo[2].rate(v),
+    'loop3rate': lambda cryo, v=None: cryo[3].rate(v),
+    'loop4rate': lambda cryo, v=None: cryo[4].rate(v),
+    'loop1type': lambda cryo, v=None: cryo[1].type(v),
+    'loop2type': lambda cryo, v=None: cryo[2].type(v),
+    'loop3type': lambda cryo, v=None: cryo[3].type(v),
+    'loop4type': lambda cryo, v=None: cryo[4].type(v),
+    'loop1setpoint': lambda cryo, v=None: cryo[1].set_point(v),
+    'loop2setpoint': lambda cryo, v=None: cryo[2].set_point(v),
+    'loop3setpoint': lambda cryo, v=None: cryo[3].set_point(v),
+    'loop4setpoint': lambda cryo, v=None: cryo[4].set_point(v),
     'loop1pgain': lambda cryo: cryo[1].p_gain(),
     'loop2pgain': lambda cryo: cryo[2].p_gain(),
     'loop3pgain': lambda cryo: cryo[3].p_gain(),
@@ -174,74 +187,6 @@ class CryoConTempController(Device):
     loop2setpoint = attr(name='loop2setpoint')
     loop3setpoint = attr(name='loop3setpoint')
     loop4setpoint = attr(name='loop4setpoint')
-
-    @loop1output.setter
-    def loop1output(self, power):
-        self.cryocon[1].output_power(power)
-
-    @loop2output.setter
-    def loop2output(self, power):
-        self.cryocon[2].output_power(power)
-
-    @loop3output.setter
-    def loop3output(self, power):
-        self.cryocon[3].output_power(power)
-
-    @loop4output.setter
-    def loop4output(self, power):
-        self.cryocon[4].output_power(power)
-
-    @loop1range.setter
-    def loop1range(self, range):
-        self.cryocon[1].range(range)
-
-    @loop1rate.setter
-    def loop1rate(self, rate):
-        self.cryocon[1].rate(rate)
-
-    @loop2rate.setter
-    def loop2rate(self, rate):
-        self.cryocon[2].rate(rate)
-
-    @loop3rate.setter
-    def loop3rate(self, rate):
-        self.cryocon[3].rate(rate)
-
-    @loop4rate.setter
-    def loop4rate(self, rate):
-        self.cryocon[4].rate(rate)
-
-    @loop1type.setter
-    def loop1type(self, type):
-        self.cryocon[1].type(type)
-
-    @loop2type.setter
-    def loop2type(self, type):
-        self.cryocon[2].type(type)
-
-    @loop3type.setter
-    def loop3type(self, type):
-        self.cryocon[3].type(type)
-
-    @loop4type.setter
-    def loop4type(self, type):
-        self.cryocon[4].type(type)
-
-    @loop1setpoint.setter
-    def loop1setpoint(self, set_point):
-        self.cryocon[1].set_point(set_point)
-
-    @loop2setpoint.setter
-    def loop2setpoint(self, set_point):
-        self.cryocon[2].set_point(set_point)
-
-    @loop3setpoint.setter
-    def loop3setpoint(self, set_point):
-        self.cryocon[3].set_point(set_point)
-
-    @loop4setpoint.setter
-    def loop4setpoint(self, set_point):
-        self.cryocon[4].set_point(set_point)
 
     @command
     def on(self):
