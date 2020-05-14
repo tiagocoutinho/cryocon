@@ -161,10 +161,6 @@ class CryoConTempController(Device):
         state, status = self._update_state_status()
         return status
 
-    @attribute(dtype=str)
-    def idn(self):
-        return self.last_values['idn']
-
     idn = attr(name='idn', dtype=str)
     channelA = attr(name='channelA')
     channelB = attr(name='channelB')
