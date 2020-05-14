@@ -74,7 +74,7 @@ async def main():
     with cryo as group:
         cryo.idn()
         cryo.control()
-        cryo['A'].temperature
+        cryo['A'].temperature()
     idn, ctrl, temp_A = group.replies
 
 
@@ -197,3 +197,13 @@ Launch the server with:
 
 ```terminal
 $ CryoConTempController test
+```
+
+## TODO
+
+* On the ETH version, the hardware replies with a maximum frequency of 10Hz,
+  but when using serial line it might become unresponsive.
+  Add backpressure to limit successive call interval to 100ms.
+* Tango server:
+  * Add `on_connection_made` callback to initialize controller with:
+    * unit=`K`
