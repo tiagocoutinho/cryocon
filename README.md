@@ -1,5 +1,7 @@
 # CryoCon library
 
+![CryoCon M24C](docs/cryocon_M24C.png)
+
 This library is used to control basic features of a CryoCon temperature
 controller. It is composed of a core library and optional simulator and
 [tango](https://tango-controls.org/) device server.
