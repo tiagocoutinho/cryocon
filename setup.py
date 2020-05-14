@@ -7,6 +7,9 @@ from setuptools import setup, find_packages
 
 requirements = ['sockio>=0.8']
 
+with open("README.md") as f:
+    description = f.read()
+
 
 setup(
     name='cryocon',
@@ -14,7 +17,8 @@ setup(
     author_email='jmoldes@cells.es',
     version='1.1.0',
     description="CryCon library",
-    long_description="CryoCon library",
+    long_description=description,
+    long_description_content_type="text/markdown",
     extras_require={
         'tango-ds': ['PyTango'],
         'simulator': ['sinstruments', 'scpi-protocol>=0.2']
