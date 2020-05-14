@@ -218,14 +218,12 @@ class CryoCon:
             if len(cmds) + len(cmd) > 250:
                 cmds = ''
                 self.cmds.append(cmds)
-            if self.cmds:
-                cmds += ';'
             cmds += cmd
             self.cmds[-1] = cmds
             self.funcs.append(func)
 
         def _store(self, replies):
-            replies = ';'.join(replies)
+            replies = ''.join(replies)
             replies = (msg.strip() for msg in replies.split(';'))
             replies = [func(text) for func, text in zip(self.funcs, replies)]
             self.replies = replies
@@ -241,6 +239,7 @@ class CryoCon:
 
     def __init__(self, conn, channels='ABCD', loops=(1, 2, 3, 4)):
         self._conn = conn
+        self._is_async = asyncio.iscoroutinefunction(conn.write_readline)
         self._log = logging.getLogger("CryoCon({}:{})".format(conn.host, conn.port))
         self._last_comm_error = None, 0  # (error, timestamp)
         self.channels = {channel: Channel(channel, self) for channel in channels}
@@ -299,13 +298,14 @@ class CryoCon:
         last_err, last_ts = self._last_comm_error
         if now < (last_ts + self.comm_error_retry_period):
             raise last_err
-        query = cmd.endswith('?')
+        query = '?;' in cmd
         raw_cmd = cmd.encode() + b'\n'
         io = self._conn.write_readline if query else self._conn.write
         handle = self._async_io if asyncio.iscoroutinefunction(io) else self._sync_io
         return handle(io, raw_cmd)
 
     def _query(self, cmd, func=lambda x: x):
+        cmd = cmd + ';'
         if self.group is None:
             reply = self._ask(cmd)
             if asyncio.iscoroutine(reply):
