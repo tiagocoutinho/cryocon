@@ -203,7 +203,8 @@ def member(name, fget=lambda x: x, fset=None):
 
 class CryoCon:
 
-    comm_error_retry_period = 3
+    io_period = 0.1
+    io_error_retry_period = 3
 
     class Group:
 
@@ -241,7 +242,8 @@ class CryoCon:
         self._conn = conn
         self._is_async = asyncio.iscoroutinefunction(conn.write_readline)
         self._log = logging.getLogger("CryoCon({}:{})".format(conn.host, conn.port))
-        self._last_comm_error = None, 0  # (error, timestamp)
+        self._last_io = 0  # (timestamp)
+        self._last_io_error = None, 0  # (error, timestamp)
         self.channels = {channel: Channel(channel, self) for channel in channels}
         self.loops = {loop: Loop(loop, self) for loop in loops}
         self.group = None
@@ -272,32 +274,39 @@ class CryoCon:
 
     @contextlib.contextmanager
     def _guard_io(self):
-        self._last_comm_error = None, 0
+        now = time.monotonic()
+        last_err, last_ts = self._last_io_error
+        if now < (last_ts + self.io_error_retry_period):
+            raise last_err
+        self._last_io_error = None, 0
+        io_interval = max(self.io_period - (now - self._last_io), 0)
         try:
-            yield
-        except OSError as comm_error:
-            self._last_comm_error = comm_error, time.time()
+            yield io_interval
+        except OSError as io_error:
+            self._last_io_error = io_error, time.monotonic()
             raise
+        else:
+            self._last_io = time.monotonic()
 
     async def _async_io(self, func, request):
         self._log.debug("REQ: %r", request)
-        with self._guard_io():
+        with self._guard_io() as wait_time:
+            if wait_time > 0:
+                await asyncio.sleep(wait_time)
             reply = handle_reply(await func(request))
         self._log.debug("REP: %r", reply)
         return reply
 
     def _sync_io(self, func, request):
         self._log.debug("REQ: %r", request)
-        with self._guard_io():
+        with self._guard_io() as wait_time:
+            if wait_time > 0:
+                time.sleep(wait_time)
             reply = handle_reply(func(request))
         self._log.debug("REP: %r", reply)
         return reply
 
     def _ask(self, cmd):
-        now = time.time()
-        last_err, last_ts = self._last_comm_error
-        if now < (last_ts + self.comm_error_retry_period):
-            raise last_err
         query = '?;' in cmd
         raw_cmd = cmd.encode() + b'\n'
         io = self._conn.write_readline if query else self._conn.write

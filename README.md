@@ -71,7 +71,7 @@ async def main():
 
     # hardware only accepts queries every 100ms. Yo can, however,
     # group queries in single request:
-    with cryo as group:
+    async with cryo as group:
         cryo.idn()
         cryo.control()
         cryo['A'].temperature()
@@ -127,7 +127,7 @@ devices:
   transports:
   - type: serial
     url: /tmp/cryocon
-  *idn: Cryo-con,24C,11223344,1.02A
+  "*idn": Cryo-con,24C,11223344,1.02A
   channels:
   - id: A
     unit: K
@@ -201,9 +201,6 @@ $ CryoConTempController test
 
 ## TODO
 
-* On the ETH version, the hardware replies with a maximum frequency of 10Hz,
-  but when using serial line it might become unresponsive.
-  Add backpressure to limit successive call interval to 100ms.
 * Tango server:
   * Add `on_connection_made` callback to initialize controller with:
     * unit=`K`
