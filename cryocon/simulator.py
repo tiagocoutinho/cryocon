@@ -10,7 +10,7 @@
 
     devices:
     - class: CryoCon
-      module: cryocon
+      package: cryocon.simulator
       transports:
       - type: tcp
         url: :5000
@@ -24,7 +24,7 @@ A simple *nc* client can be used to connect to the instrument:
 Complex configuration with default values on simulator startup:
 
 - class: CryoCon
-  module: cryocon
+  package: cryocon.simulator
   transports:
   - type: tcp
     url: :5001
@@ -45,7 +45,6 @@ Complex configuration with default values on simulator startup:
 
 import time
 import random
-import functools
 
 import scpi
 import gevent
@@ -86,7 +85,7 @@ DEFAULT_LOOP = {
     'output power': '40.3',
     'setpoint': '0.0',
     'rate': '10.0',
-    'range': 'MID',
+    'range': 'MID'
 }
 
 
@@ -101,6 +100,8 @@ DEFAULT = {
     'distc': 1,
     'remled': 'OFF',
     'control': 'OFF',
+    'hardware_revision': '12A4FE',
+    'firmware_revision': '78C90A',
     'channels': {name: Channel(id=name) for name in 'ABCD'},
     'loops': {str(loop): Loop(id=loop) for loop in range(2)}
 }
@@ -128,6 +129,8 @@ class CryoCon(BaseDevice):
             'SYSTem:NAMe': scpi.Cmd(get=self.sys_name, set=self.sys_name),
             'SYSTem:DATe': scpi.Cmd(get=self.sys_date, set=self.sys_date),
             'SYSTem:TIMe': scpi.Cmd(get=self.sys_time, set=self.sys_time),
+            'SYSTem:HWRev': scpi.Cmd(get=self.hw_revision),
+            'SYSTem:FWRev': scpi.Cmd(get=self.fw_revision),
             'CONTrol': scpi.Cmd(get=self.control, set=self.control),
             'STOP': scpi.Cmd(set=self.stop),
             'INPut': scpi.Cmd(get=self.get_input, set=self.set_input),
@@ -203,6 +206,12 @@ class CryoCon(BaseDevice):
         if request.query:
             return time.strftime('"%H:%M:%S"')
         # cannot change machine time!
+
+    def hw_revision(self, request):
+        return self._config['hardware_revision']
+
+    def fw_revision(self, request):
+        return self._config['firmware_revision']
 
     def get_input(self, request):
         if ':' in request.args:
