@@ -2,7 +2,6 @@
 
 """The setup script."""
 
-import sys
 from setuptools import setup, find_packages
 
 requirements = ['sockio>=0.8']
@@ -35,11 +34,13 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7'
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8'
     ],
     install_requires=requirements,
     license="LGPLv3",
     include_package_data=True,
-    keywords='cryocon, library, tango',
-    packages=find_packages(include=['cryocon']),
+    keywords='cryocon, library, tango, simulator',
+    packages=find_packages(),
+    python_requires=">=3.5",
     url='https://github.com/ALBA-Synchrotron/cryocon')
