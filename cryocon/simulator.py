@@ -55,8 +55,6 @@ from sinstruments.simulator import BaseDevice
 
 DEFAULT_CHANNEL = {
     'unit': 'K',
-    'slope': '1.0',
-    'variance': '0.0',
     'alarm': '--',
     'alarm_highest': '105',
     'alarm_lowest': '5',
@@ -71,6 +69,7 @@ DEFAULT_CHANNEL = {
     'slope': '0.5',
     'offset': '5.5',
 }
+
 
 def Channel(**data):
     id = data['id']
@@ -87,11 +86,13 @@ DEFAULT_LOOP = {
     'output power': '40.3',
     'setpoint': '0.0',
     'rate': '10.0',
-    'range': '1.0',
+    'range': 'MID',
 }
+
 
 def Loop(**data):
     return dict(DEFAULT_LOOP, **data)
+
 
 DEFAULT = {
     '*idn': 'Cryo-con,24C,204683,1.01A',
@@ -229,6 +230,14 @@ class CryoCon(BaseDevice):
             ch = self._config['channels']
             values = [ch[channel]['variance'] for channel in channels]
             return ';'.join(values)
+        elif variable.startswith('MIN'):
+            ch = self._config['channels']
+            values = [ch[channel]['minimum'] for channel in channels]
+            return ';'.join(values)
+        elif variable.startswith('MAX'):
+            ch = self._config['channels']
+            values = [ch[channel]['maximum'] for channel in channels]
+            return ';'.join(values)
         elif variable.startswith('ALAR'):
             ch = self._config['channels']
             values = [ch[channel]['alarm'] for channel in channels]
@@ -244,7 +253,7 @@ class CryoCon(BaseDevice):
         channel = channels[channel.upper()]
         if variable.startswith('UNIT'):
             channel['unit'] = value
-        elif variable.startswith('NAME'):
+        elif variable.startswith('NAM'):
             channel['name'] = value
         else:
             return 'NACK'
