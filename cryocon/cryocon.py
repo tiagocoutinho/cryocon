@@ -42,6 +42,18 @@ def to_on_off(text):
     return text.upper() == 'ON'
 
 
+def from_on_off(b):
+    if b in {True, 'on', 'ON'}:
+        return 'ON'
+    elif b in {False, 'off', 'OFF'}:
+        return 'OFF'
+    raise ValueError('Invalid ON/OFF value {!r}'.format(b))
+
+
+def to_name(text):
+    return text.strip('"')
+
+
 def from_name(text):
     return '"{}"'.format(text)
 
@@ -51,9 +63,25 @@ def to_date(text):
     return datetime.date(year, month, day)
 
 
+def from_date(date):
+    if isinstance(date, str):
+        if not date.startswith('"'):
+            date = '"{}"'.format(date)
+        return date
+    return date.strftime('"%m/%d/%Y"')
+
+
 def to_time(text):
     hh, mm, ss = [int(i) for i in text.strip('"').split(':')]
     return datetime.time(hh, mm, ss)
+
+
+def from_time(time):
+    if isinstance(time, str):
+        if not time.startswith('"'):
+            time = '"{}"'.format(time)
+        return time
+    return time.strftime('"%H:%M:%S"')
 
 
 def handle_reply(reply):
@@ -69,41 +97,44 @@ class CryoConError(Exception):
     pass
 
 
-class _Property:
+def sub_member(prefix, name, fget=lambda x: x, fset=None):
+    assert not (fget is None and fset is None)
+    cmd = ':{} {{}}:{}'.format(prefix.upper(), name.upper())
 
-    def __init__(self, prefix, name, fget=lambda x: x, fset=lambda x: x):
-        self.cmd = ':{} {{}}:{}'.format(prefix.upper(), name.upper())
-        self.fget = fget
-        self.fset = fset
+    def get_set(obj, value=None):
+        command = cmd.format(obj.id)
+        if value is None:
+            if fget is None:
+                raise ValueError('{} is not readable'.format(command))
+            command += '?'
+            return obj.ctrl._query(command, fget)
+        elif fset is None:
+            raise ValueError('{} is not writable'.format(command))
+        else:
+            set_command = '{} {}'.format(command, fset(value))
+            if fget is None:
+                return obj.ctrl._command(set_command)
+            command = '{};{}?'.format(set_command, command)
+        return obj._query(command, fget)
 
-    def __get__(self, obj, owner=None):
-        if self.fget is None:
-            raise AttributeError("can't set attribute")
-        cmd = self.cmd.format(obj.id) + '?'
-        return obj.ctrl._query(cmd, self.fget)
-
-    def __set__(self, obj, value):
-        if self.fset is None:
-            raise AttributeError("can't set attribute")
-        cmd = '{} {}'.format(self.cmd.format(obj.id), self.fset(value))
-        obj.ctrl._command(cmd)
+    return get_set
 
 
-channel_property = functools.partial(_Property, 'INPUT')
-loop_property = functools.partial(_Property, 'LOOP')
+channel_member = functools.partial(sub_member, 'INPUT')
+loop_member = functools.partial(sub_member, 'LOOP')
 
 
 class Channel:
 
-    name = channel_property('nam', fset=from_name)
-    temperature = channel_property('temp', to_float)
-    unit = channel_property('unit')
-    minimum = channel_property('min', to_float)
-    maximum = channel_property('max', to_float)
-    variance = channel_property('vari', to_float)
-    slope = channel_property('slop', to_float)
-    offset = channel_property('offs', to_float)
-    alarm = channel_property('alar')
+    name = channel_member('nam', to_name, from_name)
+    temperature = channel_member('temp', to_float)
+    unit = channel_member('unit')
+    minimum = channel_member('min', to_float)
+    maximum = channel_member('max', to_float)
+    variance = channel_member('vari', to_float)
+    slope = channel_member('slop', to_float)
+    offset = channel_member('offs', to_float)
+    alarm = channel_member('alar')
 
     def __init__(self, channel, ctrl):
         self.id = channel
@@ -115,23 +146,26 @@ class Channel:
 
 class Loop:
 
-    source = loop_property('source')
-    type = loop_property('typ')
-    error = loop_property('err')
-    rate = loop_property('rate', to_float)
-    set_point = loop_property('setpt', to_float_unit)
-    p_gain = loop_property('pga', to_float)
-    i_gain = loop_property('iga', to_float)
-    d_gain = loop_property('dga', to_float)
-    manual_output_power = loop_property('pman', to_float)
-    load = loop_property('load', to_int)
-    max_output_power = loop_property('maxp', to_float)
-    max_set_point = loop_property('maxs', to_float_unit)
-    output_voltage = loop_property('vsen', to_float_unit, None)  # in V
-    output_current = loop_property('isen', to_float_unit, None)  # in A
-    output_load_resistance = loop_property('lsen', to_float, None)
-    temperature = loop_property('htrh', to_float_unit, None)  # in degC
-    autotune_status = loop_property('aut:stat', str, None)
+    source = loop_member('source', fset=str)
+    set_point = loop_member('setpt', to_float_unit)
+    error = loop_member('err')
+    type = loop_member('typ', fset=str)
+    range = loop_member('rang', fset=str)
+    ramp = loop_member('ramp', to_on_off)
+    rate = loop_member('rate', to_float, str)
+    proportional_gain = loop_member('pga', to_float, str)
+    integrator_gain = loop_member('iga', to_float, str)
+    differentiator_gain = loop_member('dga', to_float, str)
+    manual_output_power = loop_member('pman', to_float, str)  # percentage
+    output_power = loop_member('outp', to_float)  # percentage
+    load = loop_member('load', to_int, str)
+    max_output_power = loop_member('maxp', to_float, str)  # percentage
+    max_set_point = loop_member('maxs', to_float_unit)
+    output_voltage = loop_member('vsen', to_float_unit)  # in V
+    output_current = loop_member('isen', to_float_unit)  # in A
+    output_load_resistance = loop_member('lsen', to_float, None)
+    temperature = loop_member('htrh', to_float_unit, None)  # in degC
+    autotune_status = loop_member('aut:stat', str, None)
 
     def __init__(self, nb, ctrl):
         self.id = nb
@@ -145,33 +179,27 @@ class Loop:
         cmd = ':LOOP {}:{} {}'.format(self.id, cmd, value)
         self.ctrl._command(cmd)
 
-    @property
-    def output_power(self):
-        return self._query('OUTPWR', to_float)
 
-    @output_power.setter
-    def output_power(self, power):
-        if self.type != 'MAN':
-            raise CryoConError('Loop must be in manual mode to set output power')
-        self._query('OUTPWR {}'.format(power))
-        rb = self.output_power
-        if abs(rb - power) > DELTA_RB:
-            raise CryoConError(
-                'Written power {!r} differs from the one read back from '
-                'instrument {!r}'.format(power, rb))
+def member(name, fget=lambda x: x, fset=None):
+    assert not (fget is None and fset is None)
+    cmd = ':{}'.format(name.upper())
 
-    @property
-    def range(self):
-        return self._query('RANGE')
+    def get_set(obj, value=None):
+        command = cmd
+        if value is None:
+            if fget is None:
+                raise ValueError('{} is not readable'.format(command))
+            command += '?'
+        elif fset is None:
+            raise ValueError('{} is not writable'.format(command))
+        else:
+            set_command = '{} {}'.format(command, fset(value))
+            if fget is None:
+                return obj._command(set_command)
+            command = '{};{}?'.format(set_command, command)
+        return obj._query(command, fget)
 
-    @range.setter
-    def range(self, rng):
-        if self.id != 1:
-            raise IndexError('Can only set range for loop 1')
-        if rng.upper() not in RANGES:
-            raise ValueError('Invalid loop range {!r}. Valid ranges are: {}'.
-                             format(rng, ','.join(RANGES)))
-        self._query('RANGE {}'.format(rng))
+    return get_set
 
 
 class CryoCon:
@@ -294,82 +322,19 @@ class CryoCon:
     def _command(self, cmd):
         return self._ask(cmd)
 
-    @property
-    def idn(self):
-        return self._query(':*IDN?')
+    idn = member('*IDN')
+    name = member('SYSTEM:NAME', to_name, from_name)
+    hw_revision = member('SYSTEM:HWR')
+    fw_revision = member('SYSTEM:FWR')
+    lockout = member('SYSTEM:LOCKOUT', to_on_off, from_on_off)
+    led = member('SYSTEM:REMLED', to_on_off, from_on_off)
+    display_filter_time = member('SYSTEM:DISTC', to_float, str)
+    date = member('SYSTEM:DATE', to_date, from_date)
+    time = member('SYSTEM:TIME', to_time, from_time)
 
-    @property
-    def name(self):
-        return self._query(':SYSTEM:NAME?')
-
-    @name.setter
-    def name(self, name):
-        self._command(':SYSTEM:NAME "{}"'.format(name))
-
-    @property
-    def hw_revision(self):
-        return self._query(':SYSTEM:HWR?')
-
-    @property
-    def fw_revision(self):
-        return self._query(':SYSTEM:FWR?')
-
-    @property
-    def control(self):
-        return self._query(':CONTROL?', to_on_off)
-
-    @control.setter
-    def control(self, onoff):
-        cmd = 'CONTROL' if onoff in (True, 'on', 'ON') else 'STOP'
-        self._command(cmd)
-
-    @property
-    def lockout(self):
-        return self._query(':SYSTEM:LOCKOUT?', to_on_off)
-
-    @lockout.setter
-    def lockout(self, onoff):
-        value = 'ON' if onoff in (True, 'on', 'ON') else 'OFF'
-        self._command(':SYSTEM:LOCKOUT {}'.format(value))
-
-    @property
-    def led(self):
-        return self._query(':SYSTEM:REMLED?', to_on_off)
-
-    @led.setter
-    def led(self, onoff):
-        value = 'ON' if onoff in (True, 'on', 'ON') else 'OFF'
-        self._command(':SYSTEM:REMLED {}'.format(value))
-
-    @property
-    def display_filter_time(self):
-        return self._query(':SYSTEM:DISTC?', to_float)
-
-    @display_filter_time.setter
-    def display_filter_time(self, value):
-        assert value in (0.5, 1, 2, 4, 8, 16, 32 or 64)
-        self._command(':SYSTEM:DISTC {}'.format(value))
-
-    @property
-    def date(self):
-        return self._query(':SYSTEM:DATE?', to_date)
-
-    @date.setter
-    def date(self, date):
-        if isinstance(date, datetime.date):
-            date = date.strftime('"%m/%d/%Y"')
-        if not date.startswith('"'):
-            date = '"{}"'.format(date)
-        self._command(':SYSTEM:DATE {}'.format(date))
-
-    @property
-    def time(self):
-        return self._query(':SYSTEM:TIME?', to_time)
-
-    @time.setter
-    def time(self, time):
-        if isinstance(time, datetime.time):
-            time = time.strftime('"%H:%M:%S"')
-        if not time.startswith('"'):
-            time = '"{}"'.format(time)
-        self._command(':SYSTEM:TIME {}'.format(time))
+    def control(self, value=None):
+        cmd = ':CONTROL?'
+        if value is not None:
+            set_cmd = ':CONTROL' if value in (True, 'on', 'ON') else ':STOP'
+            cmd = '{};{}'.format(set_cmd, cmd)
+        return self._query(cmd, to_on_off)

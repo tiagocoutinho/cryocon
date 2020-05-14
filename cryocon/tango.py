@@ -25,6 +25,7 @@ def create_connection(address, connection_timeout=0.2, timeout=0.2):
 def attr(**kwargs):
     name = kwargs['name'].lower()
     dtype = kwargs.setdefault('dtype', float)
+
     def get(self):
         value = self.last_values[name]
         if isinstance(value, Exception):
@@ -38,41 +39,41 @@ def attr(**kwargs):
 
 
 ATTR_MAP = {
-    'idn': lambda cryo: cryo.idn,
-    'control': lambda cryo: cryo.control,
-    'channela': lambda cryo: cryo['A'].temperature,
-    'channelb': lambda cryo: cryo['B'].temperature,
-    'channelc': lambda cryo: cryo['C'].temperature,
-    'channeld': lambda cryo: cryo['D'].temperature,
-    'loop1output': lambda cryo: cryo[1].output_power,
-    'loop2output': lambda cryo: cryo[2].output_power,
-    'loop3output': lambda cryo: cryo[3].output_power,
-    'loop4output': lambda cryo: cryo[4].output_power,
-    'loop1range': lambda cryo: cryo[1].range,
-    'loop1rate': lambda cryo: cryo[1].rate,
-    'loop2rate': lambda cryo: cryo[2].rate,
-    'loop3rate': lambda cryo: cryo[3].rate,
-    'loop4rate': lambda cryo: cryo[4].rate,
-    'loop1type': lambda cryo: cryo[1].type,
-    'loop2type': lambda cryo: cryo[2].type,
-    'loop3type': lambda cryo: cryo[3].type,
-    'loop4type': lambda cryo: cryo[4].type,
-    'loop1setpoint': lambda cryo: cryo[1].set_point,
-    'loop2setpoint': lambda cryo: cryo[2].set_point,
-    'loop3setpoint': lambda cryo: cryo[3].set_point,
-    'loop4setpoint': lambda cryo: cryo[4].set_point,
-    'loop1pgain': lambda cryo: cryo[1].p_gain,
-    'loop2pgain': lambda cryo: cryo[2].p_gain,
-    'loop3pgain': lambda cryo: cryo[3].p_gain,
-    'loop4pgain': lambda cryo: cryo[4].p_gain,
-    'loop1igain': lambda cryo: cryo[1].i_gain,
-    'loop2igain': lambda cryo: cryo[2].i_gain,
-    'loop3igain': lambda cryo: cryo[3].i_gain,
-    'loop4igain': lambda cryo: cryo[4].i_gain,
-    'loop1dgain': lambda cryo: cryo[1].d_gain,
-    'loop2dgain': lambda cryo: cryo[2].d_gain,
-    'loop3dgain': lambda cryo: cryo[3].d_gain,
-    'loop4dgain': lambda cryo: cryo[4].d_gain,
+    'idn': lambda cryo: cryo.idn(),
+    'control': lambda cryo: cryo.control(),
+    'channela': lambda cryo: cryo['A'].temperature(),
+    'channelb': lambda cryo: cryo['B'].temperature(),
+    'channelc': lambda cryo: cryo['C'].temperature(),
+    'channeld': lambda cryo: cryo['D'].temperature(),
+    'loop1output': lambda cryo: cryo[1].output_power(),
+    'loop2output': lambda cryo: cryo[2].output_power(),
+    'loop3output': lambda cryo: cryo[3].output_power(),
+    'loop4output': lambda cryo: cryo[4].output_power(),
+    'loop1range': lambda cryo: cryo[1].range(),
+    'loop1rate': lambda cryo: cryo[1].rate(),
+    'loop2rate': lambda cryo: cryo[2].rate(),
+    'loop3rate': lambda cryo: cryo[3].rate(),
+    'loop4rate': lambda cryo: cryo[4].rate(),
+    'loop1type': lambda cryo: cryo[1].type(),
+    'loop2type': lambda cryo: cryo[2].type(),
+    'loop3type': lambda cryo: cryo[3].type(),
+    'loop4type': lambda cryo: cryo[4].type(),
+    'loop1setpoint': lambda cryo: cryo[1].set_point(),
+    'loop2setpoint': lambda cryo: cryo[2].set_point(),
+    'loop3setpoint': lambda cryo: cryo[3].set_point(),
+    'loop4setpoint': lambda cryo: cryo[4].set_point(),
+    'loop1pgain': lambda cryo: cryo[1].p_gain(),
+    'loop2pgain': lambda cryo: cryo[2].p_gain(),
+    'loop3pgain': lambda cryo: cryo[3].p_gain(),
+    'loop4pgain': lambda cryo: cryo[4].p_gain(),
+    'loop1igain': lambda cryo: cryo[1].i_gain(),
+    'loop2igain': lambda cryo: cryo[2].i_gain(),
+    'loop3igain': lambda cryo: cryo[3].i_gain(),
+    'loop4igain': lambda cryo: cryo[4].i_gain(),
+    'loop1dgain': lambda cryo: cryo[1].d_gain(),
+    'loop2dgain': lambda cryo: cryo[2].d_gain(),
+    'loop3dgain': lambda cryo: cryo[3].d_gain(),
+    'loop4dgain': lambda cryo: cryo[4].d_gain(),
 }
 
 
@@ -136,7 +137,7 @@ class CryoConTempController(Device):
         self.set_state(state)
         self.set_status(status)
         self.last_state_ts = ts
-        self.__local_status = status # prevent deallocation by keeping reference
+        self.__local_status = status  # prevent deallocation by keeping reference
         return state, status
 
     def dev_state(self):
@@ -176,79 +177,79 @@ class CryoConTempController(Device):
 
     @loop1output.setter
     def loop1output(self, power):
-        self.cryocon[1].output_power = power
+        self.cryocon[1].output_power(power)
 
     @loop2output.setter
     def loop2output(self, power):
-        self.cryocon[2].output_power = power
+        self.cryocon[2].output_power(power)
 
     @loop3output.setter
     def loop3output(self, power):
-        self.cryocon[3].output_power = power
+        self.cryocon[3].output_power(power)
 
     @loop4output.setter
     def loop4output(self, power):
-        self.cryocon[4].output_power = power
+        self.cryocon[4].output_power(power)
 
     @loop1range.setter
     def loop1range(self, range):
-        self.cryocon[1].range = range
+        self.cryocon[1].range(range)
 
     @loop1rate.setter
     def loop1rate(self, rate):
-        self.cryocon[1].rate = rate
+        self.cryocon[1].rate(rate)
 
     @loop2rate.setter
     def loop2rate(self, rate):
-        self.cryocon[2].rate = rate
+        self.cryocon[2].rate(rate)
 
     @loop3rate.setter
     def loop3rate(self, rate):
-        self.cryocon[3].rate = rate
+        self.cryocon[3].rate(rate)
 
     @loop4rate.setter
     def loop4rate(self, rate):
-        self.cryocon[4].rate = rate
+        self.cryocon[4].rate(rate)
 
     @loop1type.setter
     def loop1type(self, type):
-        self.cryocon[1].type = type
+        self.cryocon[1].type(type)
 
     @loop2type.setter
     def loop2type(self, type):
-        self.cryocon[2].type = type
+        self.cryocon[2].type(type)
 
     @loop3type.setter
     def loop3type(self, type):
-        self.cryocon[3].type = type
+        self.cryocon[3].type(type)
 
     @loop4type.setter
     def loop4type(self, type):
-        self.cryocon[4].type = type
+        self.cryocon[4].type(type)
 
     @loop1setpoint.setter
     def loop1setpoint(self, set_point):
-        self.cryocon[1].set_point = set_point
+        self.cryocon[1].set_point(set_point)
 
     @loop2setpoint.setter
     def loop2setpoint(self, set_point):
-        self.cryocon[2].set_point = set_point
+        self.cryocon[2].set_point(set_point)
 
     @loop3setpoint.setter
     def loop3setpoint(self, set_point):
-        self.cryocon[3].set_point = set_point
+        self.cryocon[3].set_point(set_point)
 
     @loop4setpoint.setter
     def loop4setpoint(self, set_point):
-        self.cryocon[4].set_point = set_point
+        self.cryocon[4].set_point(set_point)
 
     @command
     def on(self):
-        self.cryocon.control = True
+        self.cryocon.control(True)
 
     @command
     def off(self):
-        self.cryocon.control = False
+        self.cryocon.control(False)
 
     @command(dtype_in=str, dtype_out=str)
     def run(self, cmd):
