@@ -137,7 +137,7 @@ class CryoCon(BaseDevice):
             'LOOP': scpi.Cmd(get=self.get_loop, set=self.set_loop),
         })
 
-    def handle_line(self, line):
+    def handle_message(self, line):
         self._log.debug('request %r', line)
         curr_time = time.time()
         dt = self.MIN_TIME - (curr_time - self._last_request)

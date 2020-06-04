@@ -20,7 +20,7 @@ setup(
     long_description_content_type="text/markdown",
     extras_require={
         'tango-ds': ['PyTango'],
-        'simulator': ['sinstruments', 'scpi-protocol>=0.2']
+        'simulator': ['sinstruments>=1', 'scpi-protocol>=0.2']
     },
     entry_points={
         'console_scripts': [
