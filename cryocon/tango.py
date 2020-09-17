@@ -2,10 +2,10 @@ import time
 import inspect
 import logging
 
+from connio import connection_for_url
 from tango import DevState, AttrQuality
 from tango.server import Device, attribute, command, device_property
 
-from sockio.sio import TCP
 from .cryocon import CryoCon as CryoConObject
 
 
@@ -104,8 +104,8 @@ class CryoCon(Device):
         channels = ''.join(self.UsedChannels)
         loops = self.UsedLoops
 
-        conn = create_connection(self.address)
-        self.cryocon = CryoCon(conn, channels=channels, loops=loops)
+        conn = connection_for_url(self.url, concurrency="sync")
+        self.cryocon = CryoConObject(conn, channels=channels, loops=loops)
         self.last_values = {}
         self.last_state_ts = 0
 
@@ -117,16 +117,18 @@ class CryoCon(Device):
             logging.exception('Error closing cryocon')
 
     def read_attr_hardware(self, indexes):
-        multi_attr = self.get_device_attr()
-        names = ['control']
+        multi = self.get_device_attr()
+        names = [
+            multi.get_attr_by_ind(index).get_name().lower()
+            for index in sorted(indexes)
+        ]
+        funcs = [ATTR_MAP[name] for name in names]
+
         with self.cryocon as group:
+            names.insert(0, "control")
             self.cryocon.control()
-            for index in sorted(indexes):
-                attr = multi_attr.get_attr_by_ind(index)
-                attr_name = attr.get_name().lower()
-                func = ATTR_MAP[attr_name]
+            for func in funcs:
                 func(self.cryocon)
-                names.append(attr_name)
         values = group.replies
         self.last_values = dict(zip(names, values))
         self._update_state_status(self.last_values['control'])
