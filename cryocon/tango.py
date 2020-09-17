@@ -6,8 +6,7 @@ from tango import DevState, AttrQuality
 from tango.server import Device, attribute, command, device_property
 
 from sockio.sio import TCP
-
-from .cryocon import CryoCon
+from .cryocon import CryoCon as CryoConObject
 
 
 def create_connection(address, connection_timeout=0.2, timeout=0.2):
@@ -90,7 +89,7 @@ ATTR_MAP = {
 }
 
 
-class CryoConTempController(Device):
+class CryoCon(Device):
 
     url = device_property(str)
     UsedChannels = device_property([str], default_value='ABCD')
@@ -205,7 +204,7 @@ def main():
     import logging
     fmt = '%(asctime)s %(levelname)s %(threadName)s %(message)s'
     logging.basicConfig(level=logging.WARNING, format=fmt)
-    CryoConTempController.run_server()
+    CryoCon.run_server()
 
 
 if __name__ == '__main__':
