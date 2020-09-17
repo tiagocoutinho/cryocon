@@ -24,7 +24,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'CryoCon = cryocon.tango:main [tango]',
+            'CryoCon = cryocon.tango.server:main [tango]',
         ]
     },
     classifiers=[

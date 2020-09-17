@@ -1,25 +1,14 @@
 import time
 import inspect
 import logging
+import urllib.parse
 
 from connio import connection_for_url
-from tango import DevState, AttrQuality
+
+from tango import DevState, AttrQuality, GreenMode
 from tango.server import Device, attribute, command, device_property
 
-from .cryocon import CryoCon as CryoConObject
-
-
-def create_connection(address, connection_timeout=0.2, timeout=0.2):
-    if address.startswith('tcp://'):
-        address = address[6:]
-        pars = address.split(':')
-        host = pars[0]
-        port = int(pars[1]) if len(pars) else 5000
-        conn = TCP(host, port, connection_timeout=connection_timeout, timeout=timeout)
-        return conn
-    else:
-        raise NotImplementedError(
-            'address {!r} not supported'.format(address))
+from cryocon import CryoCon as CryoConObject
 
 
 def attr(**kwargs):
@@ -89,42 +78,61 @@ ATTR_MAP = {
 }
 
 
+
 class CryoCon(Device):
 
+    green_mode = GreenMode.Asyncio
+
     url = device_property(str)
+    baudrate = device_property(dtype=int, default_value=9600)
+    bytesize = device_property(dtype=int, default_value=8)
+    parity = device_property(dtype=str, default_value='N')
+
     UsedChannels = device_property([str], default_value='ABCD')
     UsedLoops = device_property([int], default_value=[1, 2, 3, 4])
     ReadValidityPeriod = device_property(float, default_value=0.1)
     AutoLockFrontPanel = device_property(bool, default_value=False)
 
-    def init_device(self):
-        super().init_device()
+    def url_to_connection_args(self):
+        url = self.url
+        res = urllib.parse.urlparse(url)
+        kwargs = dict(concurrency="async")
+        if res.scheme in {"serial", "rfc2217"}:
+            kwargs.update(dict(baudrate=self.baudrate, bytesize=self.bytesize,
+                               parity=self.parity))
+        elif res.scheme == "tcp":
+            if res.port is None:
+                url += ":5000"
+        return url, kwargs
+
+    async def init_device(self):
+        await super().init_device()
         self.last_read_time = 0
         self._temperatures = None
         channels = ''.join(self.UsedChannels)
         loops = self.UsedLoops
 
-        conn = connection_for_url(self.url, concurrency="sync")
+        url, kwargs = self.url_to_connection_args()
+        conn = connection_for_url(url, **kwargs)
         self.cryocon = CryoConObject(conn, channels=channels, loops=loops)
         self.last_values = {}
         self.last_state_ts = 0
 
-    def delete_device(self):
+    async def delete_device(self):
         super().delete_device()
         try:
-            self.cryocon._conn.close()
+            await self.cryocon._conn.close()
         except Exception:
             logging.exception('Error closing cryocon')
 
-    def read_attr_hardware(self, indexes):
+    async def read_attr_hardware(self, indexes):
         multi = self.get_device_attr()
         names = [
             multi.get_attr_by_ind(index).get_name().lower()
             for index in sorted(indexes)
         ]
         funcs = [ATTR_MAP[name] for name in names]
-
-        with self.cryocon as group:
+        async with self.cryocon as group:
             names.insert(0, "control")
             self.cryocon.control()
             for func in funcs:
@@ -154,11 +162,11 @@ class CryoCon(Device):
         self.__local_status = status  # prevent deallocation by keeping reference
         return state, status
 
-    def dev_state(self):
+    async def dev_state(self):
         state, status = self._update_state_status()
         return state
 
-    def dev_status(self):
+    async def dev_status(self):
         state, status = self._update_state_status()
         return status
 

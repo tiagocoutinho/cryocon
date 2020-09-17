@@ -241,7 +241,7 @@ class CryoCon:
     def __init__(self, conn, channels='ABCD', loops=(1, 2, 3, 4)):
         self._conn = conn
         self._is_async = asyncio.iscoroutinefunction(conn.write_readline)
-        self._log = logging.getLogger("CryoCon({}:{})".format(conn.host, conn.port))
+        self._log = logging.getLogger("CryoCon({})".format(conn))
         self._last_io = 0  # (timestamp)
         self._last_io_error = None, 0  # (error, timestamp)
         self.channels = {channel: Channel(channel, self) for channel in channels}
