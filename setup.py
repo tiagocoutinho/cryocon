@@ -19,12 +19,12 @@ setup(
     long_description=description,
     long_description_content_type="text/markdown",
     extras_require={
-        'tango-ds': ['PyTango'],
+        'tango': ['PyTango>=9'],
         'simulator': ['sinstruments>=1', 'scpi-protocol>=0.2']
     },
     entry_points={
         'console_scripts': [
-            'CryoConTempController = cryocon.tango:main [tango-ds]',
+            'CryoCon = cryocon.tango:main [tango]',
         ]
     },
     classifiers=[
