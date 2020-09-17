@@ -1,6 +1,6 @@
 # CryoCon library
 
-![CryoCon M24C](docs/cryocon_M24C_small.png)
+<img align="right" alt="CryoCon M24C" width="350" src="docs/cryocon_M24C.png" />
 
 This library is used to control basic features of a CryoCon temperature
 controller. It is composed of a core library, an optional simulator and
