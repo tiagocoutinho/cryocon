@@ -139,15 +139,15 @@ class CryoCon(Device):
                 func(self.cryocon)
         values = group.replies
         self.last_values = dict(zip(names, values))
-        self._update_state_status(self.last_values['control'])
+        await self._update_state_status(self.last_values['control'])
 
-    def _update_state_status(self, value=None):
+    async def _update_state_status(self, value=None):
         if value is None:
             ts = time.time()
             if ts < (self.last_state_ts + 1):
                 return self.get_state(), self.get_status()
             try:
-                value = self.cryocon.control()
+                value = await self.cryocon.control()
             except Exception as error:
                 value = error
         ts = time.time()
@@ -163,11 +163,11 @@ class CryoCon(Device):
         return state, status
 
     async def dev_state(self):
-        state, status = self._update_state_status()
+        state, status = await self._update_state_status()
         return state
 
     async def dev_status(self):
-        state, status = self._update_state_status()
+        state, status = await self._update_state_status()
         return status
 
     idn = attr(name='idn', dtype=str)
@@ -195,11 +195,11 @@ class CryoCon(Device):
 
     @command
     def on(self):
-        self.cryocon.control(True)
+        return self.cryocon.control(True)
 
     @command
     def off(self):
-        self.cryocon.control(False)
+        return self.cryocon.control(False)
 
     @command(dtype_in=str, dtype_out=str)
     def run(self, cmd):

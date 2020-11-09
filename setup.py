@@ -4,7 +4,7 @@
 
 from setuptools import setup, find_packages
 
-requirements = ['connio>=0.1']
+requirements = ['connio>=0.2']
 
 with open("README.md") as f:
     description = f.read()
