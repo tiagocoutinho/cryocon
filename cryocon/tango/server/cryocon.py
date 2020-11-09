@@ -8,7 +8,7 @@ from connio import connection_for_url
 from tango import DevState, AttrQuality, GreenMode
 from tango.server import Device, attribute, command, device_property
 
-from cryocon import CryoCon as CryoConObject
+import cryocon
 
 
 def attr(**kwargs):
@@ -109,14 +109,12 @@ class CryoCon(Device):
 
     async def init_device(self):
         await super().init_device()
-        self.last_read_time = 0
-        self._temperatures = None
         channels = ''.join(self.UsedChannels)
         loops = self.UsedLoops
 
         url, kwargs = self.url_to_connection_args()
         conn = connection_for_url(url, **kwargs)
-        self.cryocon = CryoConObject(conn, channels=channels, loops=loops)
+        self.cryocon = CryoCon(conn, channels=channels, loops=loops)
         self.last_values = {}
         self.last_state_ts = 0
 
