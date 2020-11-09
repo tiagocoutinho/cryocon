@@ -55,6 +55,10 @@ ATTR_MAP = {
     'loop2rate': lambda cryo, v=None: cryo[2].rate(v),
     'loop3rate': lambda cryo, v=None: cryo[3].rate(v),
     'loop4rate': lambda cryo, v=None: cryo[4].rate(v),
+    'loop1ramp': lambda cryo, v=None: cryo[1].ramp(v),
+    'loop2ramp': lambda cryo, v=None: cryo[2].ramp(v),
+    'loop3ramp': lambda cryo, v=None: cryo[3].ramp(v),
+    'loop4ramp': lambda cryo, v=None: cryo[4].ramp(v),
     'loop1type': lambda cryo, v=None: cryo[1].type(v),
     'loop2type': lambda cryo, v=None: cryo[2].type(v),
     'loop3type': lambda cryo, v=None: cryo[3].type(v),
@@ -63,18 +67,18 @@ ATTR_MAP = {
     'loop2setpoint': lambda cryo, v=None: cryo[2].set_point(v),
     'loop3setpoint': lambda cryo, v=None: cryo[3].set_point(v),
     'loop4setpoint': lambda cryo, v=None: cryo[4].set_point(v),
-    'loop1pgain': lambda cryo: cryo[1].p_gain(),
-    'loop2pgain': lambda cryo: cryo[2].p_gain(),
-    'loop3pgain': lambda cryo: cryo[3].p_gain(),
-    'loop4pgain': lambda cryo: cryo[4].p_gain(),
-    'loop1igain': lambda cryo: cryo[1].i_gain(),
-    'loop2igain': lambda cryo: cryo[2].i_gain(),
-    'loop3igain': lambda cryo: cryo[3].i_gain(),
-    'loop4igain': lambda cryo: cryo[4].i_gain(),
-    'loop1dgain': lambda cryo: cryo[1].d_gain(),
-    'loop2dgain': lambda cryo: cryo[2].d_gain(),
-    'loop3dgain': lambda cryo: cryo[3].d_gain(),
-    'loop4dgain': lambda cryo: cryo[4].d_gain(),
+    'loop1pgain': lambda cryo: cryo[1].proportional_gain(),
+    'loop2pgain': lambda cryo: cryo[2].proportional_gain(),
+    'loop3pgain': lambda cryo: cryo[3].proportional_gain(),
+    'loop4pgain': lambda cryo: cryo[4].proportional_gain(),
+    'loop1igain': lambda cryo: cryo[1].integrator_gain(),
+    'loop2igain': lambda cryo: cryo[2].integrator_gain(),
+    'loop3igain': lambda cryo: cryo[3].integrator_gain(),
+    'loop4igain': lambda cryo: cryo[4].integrator_gain(),
+    'loop1dgain': lambda cryo: cryo[1].differentiator_gain(),
+    'loop2dgain': lambda cryo: cryo[2].differentiator_gain(),
+    'loop3dgain': lambda cryo: cryo[3].differentiator_gain(),
+    'loop4dgain': lambda cryo: cryo[4].differentiator_gain(),
 }
 
 
@@ -184,6 +188,10 @@ class CryoCon(Device):
     loop2rate = attr(name='loop2rate', label='Loop 2 Rate', unit='K/min', min_value=0, max_value=100)
     loop3rate = attr(name='loop3rate', label='Loop 3 Rate', unit='K/min', min_value=0, max_value=100)
     loop4rate = attr(name='loop4rate', label='Loop 4 Rate', unit='K/min', min_value=0, max_value=100)
+    loop1ramp = attr(name='loop1ramp', label='Loop 1 Ramp', dtype=bool)
+    loop2ramp = attr(name='loop2ramp', label='Loop 2 Ramp', dtype=bool)
+    loop3ramp = attr(name='loop3ramp', label='Loop 3 Ramp', dtype=bool)
+    loop4ramp = attr(name='loop4ramp', label='Loop 4 Ramp', dtype=bool)
     loop1type = attr(name='loop1type', label='Loop 1 Type', dtype=str)
     loop2type = attr(name='loop2type', label='Loop 2 Type', dtype=str)
     loop3type = attr(name='loop3type', label='Loop 3 Type', dtype=str)
@@ -192,6 +200,18 @@ class CryoCon(Device):
     loop2setpoint = attr(name='loop2setpoint', label='Loop 1 SetPoint', unit='K')
     loop3setpoint = attr(name='loop3setpoint', label='Loop 1 SetPoint', unit='K')
     loop4setpoint = attr(name='loop4setpoint', label='Loop 1 SetPoint', unit='K')
+    loop1pgain = attr(name='loop1pgain', label='Loop 1 P gain')
+    loop2pgain = attr(name='loop2pgain', label='Loop 2 P gain')
+    loop3pgain = attr(name='loop3pgain', label='Loop 3 P gain')
+    loop4pgain = attr(name='loop4pgain', label='Loop 4 P gain')
+    loop1igain = attr(name='loop1igain', label='Loop 1 I gain', unit='s')
+    loop2igain = attr(name='loop2igain', label='Loop 2 I gain', unit='s')
+    loop3igain = attr(name='loop3igain', label='Loop 3 I gain', unit='s')
+    loop4igain = attr(name='loop4igain', label='Loop 4 I gain', unit='s')
+    loop1dgain = attr(name='loop1dgain', label='Loop 1 D gain', unit='Hz')
+    loop2dgain = attr(name='loop2dgain', label='Loop 2 D gain', unit='Hz')
+    loop3dgain = attr(name='loop3dgain', label='Loop 3 D gain', unit='Hz')
+    loop4dgain = attr(name='loop4dgain', label='Loop 4 D gain', unit='Hz')
 
     @command
     def on(self):
