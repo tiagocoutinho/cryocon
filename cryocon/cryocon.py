@@ -307,7 +307,7 @@ class CryoCon:
         return reply
 
     def _ask(self, cmd):
-        query = '?;' in cmd
+        query = '?' in cmd
         raw_cmd = cmd.encode() + b'\n'
         io = self._conn.write_readline if query else self._conn.write
         handle = self._async_io if asyncio.iscoroutinefunction(io) else self._sync_io
