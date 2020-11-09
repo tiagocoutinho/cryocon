@@ -103,6 +103,8 @@ class CryoCon(Device):
         elif res.scheme == "tcp":
             if res.port is None:
                 url += ":5000"
+            kwargs["timeout"] = 0.5
+            kwargs["connection_timeout"] = 1
         return url, kwargs
 
     async def init_device(self):
