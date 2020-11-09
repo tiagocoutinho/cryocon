@@ -14,7 +14,7 @@ setup(
     name='cryocon',
     author="Jairo Moldes",
     author_email='jmoldes@cells.es',
-    version='3.0.0',
+    version='3.1.0',
     description="CryCon library",
     long_description=description,
     long_description_content_type="text/markdown",
