@@ -114,7 +114,7 @@ class CryoCon(Device):
 
         url, kwargs = self.url_to_connection_args()
         conn = connection_for_url(url, **kwargs)
-        self.cryocon = CryoCon(conn, channels=channels, loops=loops)
+        self.cryocon = cryocon.CryoCon(conn, channels=channels, loops=loops)
         self.last_values = {}
         self.last_state_ts = 0
 
