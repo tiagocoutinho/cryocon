@@ -20,11 +20,14 @@ setup(
     long_description_content_type="text/markdown",
     extras_require={
         'tango': ['PyTango>=9'],
-        'simulator': ['sinstruments>=1', 'scpi-protocol>=0.2']
+        'simulator': ['sinstruments>=1.3', 'scpi-protocol>=0.2']
     },
     entry_points={
         'console_scripts': [
             'CryoCon = cryocon.tango.server:main [tango]',
+        ],
+        'sinstruments.device': [
+            'CryoCon = cryocon.simulator:CryoCon [simulator]'
         ]
     },
     classifiers=[

@@ -10,7 +10,6 @@
 
     devices:
     - class: CryoCon
-      package: cryocon.simulator
       transports:
       - type: tcp
         url: :5000
@@ -24,7 +23,6 @@ A simple *nc* client can be used to connect to the instrument:
 Complex configuration with default values on simulator startup:
 
 - class: CryoCon
-  package: cryocon.simulator
   transports:
   - type: tcp
     url: :5001
