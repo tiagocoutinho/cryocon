@@ -117,13 +117,32 @@ explicitly:
 
 devices:
 - class: CryoCon
-  package: cryocon.simulator
+  name: cryo1
   transports:
   - type: tcp
     url: :5000
 
 - class: CryoCon
-  package: cryocon.simulator
+  name: cryo2
+  transports:
+    - type: tcp
+      url: :5001
+  channels:
+    A:
+      unit: K
+    B:
+      unit: K
+  loops:
+    1:
+      source: A
+      type: MAN
+  distc: 4
+  lockout: OFF
+  remled: ON
+  control: OFF
+
+- class: CryoCon
+  name: cryo2
   transports:
   - type: serial
     url: /tmp/cryocon

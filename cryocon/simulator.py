@@ -10,9 +10,10 @@
 
     devices:
     - class: CryoCon
+      name: cryo1
       transports:
-      - type: tcp
-        url: :5000
+        - type: tcp
+          url: :5000
 
 A simple *nc* client can be used to connect to the instrument:
 
@@ -23,18 +24,19 @@ A simple *nc* client can be used to connect to the instrument:
 Complex configuration with default values on simulator startup:
 
 - class: CryoCon
+  name: cryo2
   transports:
-  - type: tcp
-    url: :5001
+    - type: tcp
+      url: :5001
   channels:
-  - id: A
-    unit: K
-  - id: B
-    unit: K
+    A:
+      unit: K
+    B:
+      unit: K
   loops:
-  - id: 1
-    source: A
-    type: MAN
+    1:
+      source: A
+      type: MAN
   distc: 4
   lockout: OFF
   remled: ON
@@ -69,10 +71,7 @@ DEFAULT_CHANNEL = {
 
 
 def Channel(**data):
-    id = data['id']
-    data.setdefault('name', 'Channel' + id)
-    channel = dict(DEFAULT_CHANNEL, **data)
-    return channel
+    return dict(DEFAULT_CHANNEL, **data)
 
 
 TEMPS = ['11.456', '12.456', '13.456', '14.456', '.......']
@@ -100,8 +99,8 @@ DEFAULT = {
     'control': 'OFF',
     'hardware_revision': '12A4FE',
     'firmware_revision': '78C90A',
-    'channels': {name: Channel(id=name) for name in 'ABCD'},
-    'loops': {str(loop): Loop(id=loop) for loop in range(2)}
+    'channels': {name: Channel() for name in 'ABCD'},
+    'loops': {str(loop): Loop() for loop in range(2)}
 }
 
 
@@ -114,10 +113,14 @@ class CryoCon(BaseDevice):
         if 'newline' in opts:
             kwargs['newline'] = opts.pop('newline')
         self._config = dict(DEFAULT, **opts)
-        self._config['channels'] = {channel['id'].upper(): Channel(**channel)
-                                    for channel in self._config['channels'].values()}
-        self._config['loops'] = {str(loop['id']): Loop(**loop)
-                                 for loop in self._config['loops'].values()}
+        self._config['channels'] = {
+            ch_name: Channel(id=ch_name, **ch)
+            for ch_name, ch in self._config['channels'].items()
+        }
+        self._config['loops'] = {
+            str(loop_id): Loop(id=str(loop_id), **loop)
+            for loop_id, loop in self._config['loops'].items()
+        }
         super().__init__(name, **kwargs)
         self._last_request = 0
         self._cmds = scpi.Commands({
