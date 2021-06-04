@@ -112,7 +112,7 @@ class CryoCon(BaseDevice):
         kwargs = {}
         if 'newline' in opts:
             kwargs['newline'] = opts.pop('newline')
-        self._config = dict(DEFAULT, **opts)
+        self._config = dict(DEFAULT, name=name, **opts)
         self._config['channels'] = {
             ch_name: Channel(id=ch_name, **ch)
             for ch_name, ch in self._config['channels'].items()
