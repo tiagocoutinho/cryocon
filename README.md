@@ -194,6 +194,15 @@ $ python
 Cryo-con,24C,204683,1.01A
 ```
 
+or, since python 3.8, it is possible to launch a natively async REPL:
+```python
+$ python -m asyncio
+>>> from sockio.aio import TCP
+>>> from cryocon import CryoCon
+>>> cryo = CryoCon(TCP('localhost', 5000))
+>>> print(await cryo.idn())
+```
+
 ### Tango server
 
 A [tango](https://tango-controls.org/) device server is also provided.
