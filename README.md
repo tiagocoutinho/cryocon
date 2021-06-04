@@ -204,7 +204,7 @@ Make sure everything is installed with:
 
 Register a cryocon tango server in the tango database:
 ```
-$ tangoctl server add -s CryoConTempController/test -d CryoConTempController test/cryocon/1
+$ tangoctl server add -s CryoCon/test -d CryoCon test/cryocon/1
 $ tangoctl device property write -d test/cryocon/1 -p address -v "tcp://192.168.123:5000"
 ```
 
@@ -215,7 +215,7 @@ tango tool like [fandango](https://pypi.org/project/fandango/) or Jive)
 Launch the server with:
 
 ```terminal
-$ CryoConTempController test
+$ CryoCon test
 ```
 
 ## TODO
