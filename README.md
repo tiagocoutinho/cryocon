@@ -140,26 +140,6 @@ devices:
   lockout: OFF
   remled: ON
   control: OFF
-
-- class: CryoCon
-  name: cryo2
-  transports:
-  - type: serial
-    url: /tmp/cryocon
-  "*idn": Cryo-con,24C,11223344,1.02A
-  channels:
-  - id: A
-    unit: K
-  - id: B
-    unit: K
-  loops:
-  - id: 1
-    source: A
-    type: MAN
-  distc: 4
-  lockout: OFF
-  remled: ON
-  control: OFF
 ```
 
 To start the simulator type:
