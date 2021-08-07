@@ -9,6 +9,14 @@ requirements = ['connio>=0.2']
 with open("README.md") as f:
     description = f.read()
 
+extras_require={
+    "tango": ["pytango"],
+    "simulator": ["sinstruments>=1.3", "scpi-protocol>=0.2"]
+}
+
+extras_require["all"] = list(
+    {pkg for pkgs in extras_require.values() for pkg in pkgs}
+)
 
 setup(
     name='cryocon',
@@ -18,10 +26,7 @@ setup(
     description="CryCon library",
     long_description=description,
     long_description_content_type="text/markdown",
-    extras_require={
-        'tango': ['PyTango>=9'],
-        'simulator': ['sinstruments>=1.3', 'scpi-protocol>=0.2']
-    },
+    extras_require=extras_require,
     entry_points={
         'console_scripts': [
             'CryoCon = cryocon.tango.server:main [tango]',
