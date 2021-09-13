@@ -74,7 +74,7 @@ def Channel(**data):
     return dict(DEFAULT_CHANNEL, **data)
 
 
-TEMPS = ['11.456', '12.456', '13.456', '14.456', '.......']
+TEMPS = ['11.456', '12.456', '13.456', '14.456', '.......', '-------']
 
 DEFAULT_LOOP = {
     'source': 'A',

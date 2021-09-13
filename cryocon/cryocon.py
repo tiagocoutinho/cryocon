@@ -6,7 +6,7 @@ import functools
 import contextlib
 
 
-OUT_OF_RANGE = '_______'
+OUT_OF_RANGE = '-------'
 OUT_OF_LIMIT = '.......'
 NA = 'N/A'
 DISABLED = ''
