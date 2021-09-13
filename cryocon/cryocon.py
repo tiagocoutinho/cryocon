@@ -6,8 +6,13 @@ import functools
 import contextlib
 
 
-OUT_OF_RANGE = '-------'
-OUT_OF_LIMIT = '.......'
+# sensor fault condition: the sensor is open, disconnected or shorted
+FAULT_CONDITION = '-------'
+
+# a temperature reading is within the measurement range of the instrument
+# but is not within the specified Sensor Calibration Curve
+OUT_OF_RANGE = '.......'
+
 NA = 'N/A'
 DISABLED = ''
 UNITS = ('K', 'C', 'F', 'S')
@@ -23,13 +28,13 @@ RANGES = ['HI', 'MID', 'LOW']
 
 
 def to_int(text):
-    if text in (OUT_OF_LIMIT, OUT_OF_RANGE, NA):
+    if text in (FAULT_CONDITION, OUT_OF_RANGE, NA):
         return None
     return int(text)
 
 
 def to_float(text):
-    if text in (OUT_OF_LIMIT, OUT_OF_RANGE, NA):
+    if text in (FAULT_CONDITION, OUT_OF_RANGE, NA):
         return None
     return float(text)
 
