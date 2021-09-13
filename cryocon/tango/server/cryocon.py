@@ -222,8 +222,9 @@ class CryoCon(Device):
         return self.cryocon.control(False)
 
     @command(dtype_in=str, dtype_out=str)
-    def run(self, cmd):
-        return self.cryocon._ask(cmd)
+    async def run(self, cmd):
+        r = self.cryocon._ask(cmd)
+        return r or ''
 
     @command(dtype_in=[str])
     def setchannelunit(self, unit):
