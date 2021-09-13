@@ -252,6 +252,7 @@ class CryoCon:
         self.channels = {channel: Channel(channel, self) for channel in channels}
         self.loops = {loop: Loop(loop, self) for loop in loops}
         self.group = None
+        self._lock = asyncio.Lock()
 
     def __getitem__(self, key):
         try:
@@ -295,10 +296,11 @@ class CryoCon:
 
     async def _async_io(self, func, request):
         self._log.debug("REQ: %r", request)
-        with self._guard_io() as wait_time:
-            if wait_time > 0:
-                await asyncio.sleep(wait_time)
-            reply = handle_reply(await func(request))
+        async with self._lock:
+            with self._guard_io() as wait_time:
+                if wait_time > 0:
+                    await asyncio.sleep(wait_time)
+                reply = handle_reply(await func(request))
         self._log.debug("REP: %r", reply)
         return reply
 
