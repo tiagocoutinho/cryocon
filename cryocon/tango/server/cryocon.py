@@ -223,7 +223,7 @@ class CryoCon(Device):
 
     @command(dtype_in=str, dtype_out=str)
     async def run(self, cmd):
-        r = self.cryocon._ask(cmd)
+        r = await self.cryocon._ask(cmd)
         return r or ''
 
     @command(dtype_in=[str])
