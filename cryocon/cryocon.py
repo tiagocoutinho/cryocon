@@ -151,7 +151,7 @@ class Channel:
 class Loop:
 
     source = loop_member('source', fset=str)
-    set_point = loop_member('setpt', to_float_unit)
+    set_point = loop_member('setpt', to_float_unit, str)
     error = loop_member('err')
     type = loop_member('typ', fset=str)
     range = loop_member('rang', fset=str)
