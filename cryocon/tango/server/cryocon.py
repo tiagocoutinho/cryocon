@@ -31,8 +31,8 @@ def attr(**kwargs):
     sig = inspect.signature(func)
     if len(sig.parameters) > 1:
         @attr.setter
-        def fset(self, value):
-            func(self.cryocon, value)
+        async def fset(self, value):
+            await func(self.cryocon, value)
         fset.__name__ = 'write_' + name
         kwargs['fset'] = fset
 
