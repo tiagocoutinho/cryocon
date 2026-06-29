@@ -197,6 +197,17 @@ $ tangoctl server add -s CryoCon/test -d CryoCon test/cryocon/1
 $ tangoctl device property write -d test/cryocon/1 -p url -v "tcp://192.168.123:5000"
 ```
 
+By default, loop output attributes are read-only. To allow manual output writes
+for selected loops, set the `WritableManualOutputLoops` device property:
+
+```
+$ tangoctl device property write -d test/cryocon/1 -p WritableManualOutputLoops -v "1,2"
+```
+
+With this property, writing `loop1output` or `loop2output` writes the loop manual
+output power (`PMAN`). Leave the property empty to keep the default read-only
+behavior.
+
 (the above example uses [tangoctl](https://pypi.org/project/tangoctl/). You would need
 to install it with `pip install tangoctl` before using it. You are free to use any other
 tango tool like [fandango](https://pypi.org/project/fandango/) or Jive)
