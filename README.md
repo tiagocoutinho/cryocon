@@ -84,7 +84,7 @@ asyncio.run(main())
 #### Serial line
 
 To access a serial line based CryoCon device it is strongly recommended you spawn
-a serial to tcp bridge using [ser2net](https://linux.die.net/man/8/ser2net) or
+a serial to tcp bridge using [ser2net](https://linux.die.net/man/8/ser2net), [ser2sock](https://github.com/tiagocoutinho/ser2sock) or
 [socat](https://linux.die.net/man/1/socat)
 
 Assuming your device is connected to `/dev/ttyS0` and the baudrate is set to 19200,
@@ -194,7 +194,7 @@ Make sure everything is installed with:
 Register a cryocon tango server in the tango database:
 ```
 $ tangoctl server add -s CryoCon/test -d CryoCon test/cryocon/1
-$ tangoctl device property write -d test/cryocon/1 -p address -v "tcp://192.168.123:5000"
+$ tangoctl device property write -d test/cryocon/1 -p url -v "tcp://192.168.123:5000"
 ```
 
 (the above example uses [tangoctl](https://pypi.org/project/tangoctl/). You would need
