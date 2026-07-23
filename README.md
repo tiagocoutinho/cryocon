@@ -206,7 +206,8 @@ $ tangoctl device property write -d test/cryocon/1 -p WritableManualOutputLoops 
 
 With this property, writing `loop1output` or `loop2output` writes the loop manual
 output power (`PMAN`). Leave the property empty to keep the default read-only
-behavior.
+behavior. Loops listed in `WritableManualOutputLoops` but not in `UsedLoops` are
+ignored and reported in the device status.
 
 (the above example uses [tangoctl](https://pypi.org/project/tangoctl/). You would need
 to install it with `pip install tangoctl` before using it. You are free to use any other

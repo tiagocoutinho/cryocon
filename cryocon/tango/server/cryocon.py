@@ -130,12 +130,18 @@ class CryoCon(Device):
         loops = self.UsedLoops
         writable_manual_output_loops = set(self.WritableManualOutputLoops)
         invalid_loops = writable_manual_output_loops - set(loops)
+        self.writable_manual_output_loops = writable_manual_output_loops - invalid_loops
+        self._config_warning_status = ''
         if invalid_loops:
-            raise ValueError(
-                'WritableManualOutputLoops contains loops not in UsedLoops: {}'
-                .format(sorted(invalid_loops))
+            self._config_warning_status = (
+                'Warning: WritableManualOutputLoops configured as {}. '
+                'Loops {} are not in UsedLoops {} and were ignored.'
+                .format(
+                    sorted(writable_manual_output_loops),
+                    sorted(invalid_loops),
+                    sorted(loops),
+                )
             )
-        self.writable_manual_output_loops = writable_manual_output_loops
 
         url, kwargs = self.url_to_connection_args()
         conn = connection_for_url(url, **kwargs)
@@ -181,6 +187,8 @@ class CryoCon(Device):
         else:
             state = DevState.ON if value else DevState.OFF
             status = 'Control is {}'.format('On' if value else 'Off')
+        if self._config_warning_status:
+            status = '{}. {}'.format(status, self._config_warning_status)
         self.set_state(state)
         self.set_status(status)
         self.last_state_ts = ts
