@@ -32,7 +32,14 @@ def attr(**kwargs):
     if len(sig.parameters) > 1:
         @attr.setter
         async def fset(self, value):
-            await func(self.cryocon, value)
+            if name.startswith('loop') and name.endswith('output'):
+                loop = int(name[4])
+                if loop in self.writable_manual_output_loops:
+                    await write_loop_output(self.cryocon, loop, value)
+                else:
+                    await func(self.cryocon, value)
+            else:
+                await func(self.cryocon, value)
         fset.__name__ = 'write_' + name
         kwargs['fset'] = fset
 
@@ -82,6 +89,11 @@ ATTR_MAP = {
 }
 
 
+async def write_loop_output(cryo, loop, value):
+    result = cryo[loop].manual_output_power(value)
+    if inspect.isawaitable(result):
+        await result
+
 
 class CryoCon(Device):
 
@@ -94,6 +106,7 @@ class CryoCon(Device):
 
     UsedChannels = device_property([str], default_value='ABCD')
     UsedLoops = device_property([int], default_value=[1, 2, 3, 4])
+    WritableManualOutputLoops = device_property([int], default_value=[])
     ReadValidityPeriod = device_property(float, default_value=0.1)
     AutoLockFrontPanel = device_property(bool, default_value=False)
 
@@ -115,6 +128,20 @@ class CryoCon(Device):
         await super().init_device()
         channels = ''.join(self.UsedChannels)
         loops = self.UsedLoops
+        writable_manual_output_loops = set(self.WritableManualOutputLoops)
+        invalid_loops = writable_manual_output_loops - set(loops)
+        self.writable_manual_output_loops = writable_manual_output_loops - invalid_loops
+        self._config_warning_status = ''
+        if invalid_loops:
+            self._config_warning_status = (
+                'Warning: WritableManualOutputLoops configured as {}.\n'
+                'Loops {} are not in UsedLoops {} and were ignored.'
+                .format(
+                    sorted(writable_manual_output_loops),
+                    sorted(invalid_loops),
+                    sorted(loops),
+                )
+            )
 
         url, kwargs = self.url_to_connection_args()
         conn = connection_for_url(url, **kwargs)
@@ -160,6 +187,8 @@ class CryoCon(Device):
         else:
             state = DevState.ON if value else DevState.OFF
             status = 'Control is {}'.format('On' if value else 'Off')
+        if self._config_warning_status:
+            status += '\n'.format(self._config_warning_status)
         self.set_state(state)
         self.set_status(status)
         self.last_state_ts = ts
