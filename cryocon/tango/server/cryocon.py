@@ -188,15 +188,7 @@ class CryoCon(Device):
             state = DevState.ON if value else DevState.OFF
             status = 'Control is {}'.format('On' if value else 'Off')
         if self._config_warning_status:
-            previous_status = self.get_status()
-            if (previous_status and
-                    self._config_warning_status not in previous_status):
-                status = '{}\n{}'.format(previous_status,
-                                         self._config_warning_status)
-            elif previous_status:
-                status = previous_status
-            else:
-                status = '{}. {}'.format(status, self._config_warning_status)
+            status += '\n'.format(self._config_warning_status)
         self.set_state(state)
         self.set_status(status)
         self.last_state_ts = ts
