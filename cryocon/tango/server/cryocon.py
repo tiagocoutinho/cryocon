@@ -109,6 +109,7 @@ class CryoCon(Device):
     WritableManualOutputLoops = device_property([int], default_value=[])
     ReadValidityPeriod = device_property(float, default_value=0.1)
     AutoLockFrontPanel = device_property(bool, default_value=False)
+    MaximumCharsPerCommand = device_property(dtype=int, default_value=250)
 
     def url_to_connection_args(self):
         url = self.url
@@ -145,7 +146,12 @@ class CryoCon(Device):
 
         url, kwargs = self.url_to_connection_args()
         conn = connection_for_url(url, **kwargs)
-        self.cryocon = cryocon.CryoCon(conn, channels=channels, loops=loops)
+        self.cryocon = cryocon.CryoCon(
+            conn,
+            channels=channels,
+            loops=loops,
+            maximum_chars_per_command=self.MaximumCharsPerCommand,
+        )
         self.last_values = {}
         self.last_state_ts = 0
 
