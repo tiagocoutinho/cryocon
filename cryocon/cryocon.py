@@ -210,6 +210,7 @@ class CryoCon:
 
     io_period = 0.1
     io_error_retry_period = 3
+    default_maximum_chars_per_command = 250
 
     class Group:
 
@@ -220,8 +221,7 @@ class CryoCon:
 
         def append(self, cmd, func):
             cmds = self.cmds[-1]
-            # maximum of 255 characters per command
-            if len(cmds) + len(cmd) > 250:
+            if len(cmds) + len(cmd) > self.ctrl.maximum_chars_per_command:
                 cmds = ''
                 self.cmds.append(cmds)
             cmds += cmd
@@ -229,7 +229,7 @@ class CryoCon:
             self.funcs.append(func)
 
         def _store(self, replies):
-            replies = ''.join(replies)
+            replies = ';'.join(replies)
             replies = (msg.strip() for msg in replies.split(';'))
             replies = [func(text) for func, text in zip(self.funcs, replies)]
             self.replies = replies
@@ -243,12 +243,14 @@ class CryoCon:
             store = self._async_store if is_async else self._store
             return store(replies)
 
-    def __init__(self, conn, channels='ABCD', loops=(1, 2, 3, 4)):
+    def __init__(self, conn, channels='ABCD', loops=(1, 2, 3, 4),
+                 maximum_chars_per_command=default_maximum_chars_per_command):
         self._conn = conn
         self._is_async = asyncio.iscoroutinefunction(conn.write_readline)
         self._log = logging.getLogger("CryoCon({})".format(conn))
         self._last_io = 0  # (timestamp)
         self._last_io_error = None, 0  # (error, timestamp)
+        self.maximum_chars_per_command = maximum_chars_per_command
         self.channels = {channel: Channel(channel, self) for channel in channels}
         self.loops = {loop: Loop(loop, self) for loop in loops}
         self.group = None
